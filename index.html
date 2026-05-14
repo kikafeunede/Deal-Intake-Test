@@ -784,55 +784,17 @@
     </div>
     <div class="header-meta">
       <span><span class="dot"></span>Salesforce via chat</span>
-      <span class="help-link" onclick="openSettings()">Flag rules</span>
+      <span class="help-link" onclick="openSettings()">⚙ Settings</span>
       <span class="help-link" onclick="toggleInstructions(true)">Help</span>
       <div class="user-pill" id="userPill">—</div>
     </div>
   </header>
 
-  <div id="setupBanner" style="background:#1c2733; color:rgba(255,255,255,0.92); padding:10px 24px; font-size:12.5px; display:flex; align-items:center; gap:20px; flex-wrap:wrap; border-bottom:1px solid #2a3a4a;">
-    <span style="font-family:'JetBrains Mono',monospace; font-size:10px; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; opacity:0.55; flex-shrink:0;">How to use</span>
-    <span style="opacity:0.85;"><strong style="opacity:1; color:white;">1</strong> &nbsp;Click <strong style="opacity:1; color:white;">+ New intake</strong></span>
-    <span style="opacity:0.3;">›</span>
-    <span style="opacity:0.85;"><strong style="opacity:1; color:white;">2</strong> &nbsp;Paste Opp ID &amp; click <strong style="opacity:1; color:white;">⚡ Sync</strong> — Claude fetches Salesforce data &amp; posts JSON in chat</span>
-    <span style="opacity:0.3;">›</span>
-    <span style="opacity:0.85;"><strong style="opacity:1; color:white;">3</strong> &nbsp;Copy Claude's JSON &amp; paste into the box in the deal — fields populate instantly</span>
-    <span style="opacity:0.3;">›</span>
-    <span style="opacity:0.85;"><strong style="opacity:1; color:white;">4</strong> &nbsp;Review flags, attach order form, <strong style="opacity:1; color:white;">✓ Save</strong></span>
-    <button onclick="document.getElementById('setupBanner').style.display='none'" style="margin-left:auto; background:none; border:none; color:rgba(255,255,255,0.4); cursor:pointer; font-size:18px; line-height:1; padding:0 4px; flex-shrink:0;" title="Dismiss">&times;</button>
-  </div>
+  
   <div class="notices-strip" id="noticesStrip"></div>
 
   <div class="board-view" id="boardView">
-    <div class="quickstart" id="quickstart">
-      <button class="quickstart-dismiss" onclick="dismissQuickstart()" title="Hide this">×</button>
-      <div class="quickstart-content">
-        <div class="quickstart-eyebrow">Quick start</div>
-        <div class="quickstart-title">Pull a deal from Salesforce in seconds</div>
-        <div class="quickstart-sub">Open this tool inside Claude (claude.ai → GTMS Deal Intake project) so your deals sync with the team. Each step takes about 5 seconds.</div>
-        <div class="quickstart-steps">
-          <div class="qs-step">
-            <span class="qs-step-num">1</span>
-            <span class="qs-step-text"><strong>New intake</strong> — click the button to open a new deal record.</span>
-          </div>
-          <div class="qs-step">
-            <span class="qs-step-num">2</span>
-            <span class="qs-step-text"><strong>Paste Opp ID</strong> — enter the Salesforce Opp ID or URL.</span>
-          </div>
-          <div class="qs-step">
-            <span class="qs-step-num">3</span>
-            <span class="qs-step-text"><strong>Sync</strong> — click ⚡ Sync from Salesforce. Fields populate automatically.</span>
-          </div>
-          <div class="qs-step">
-            <span class="qs-step-num">4</span>
-            <span class="qs-step-text"><strong>Review &amp; save</strong> — check flags, attach order form, save.</span>
-          </div>
-        </div>
-      </div>
-      <div class="quickstart-cta">
-        <button class="btn btn-cta btn-lg" onclick="newDeal()">＋ New intake</button>
-      </div>
-    </div>
+    
     <div class="toolbar">
       <div class="search">
         <input type="text" id="searchInput" placeholder="Search by deal name, account, Opp ID..." oninput="renderTable()" />
@@ -1137,8 +1099,10 @@
 <!-- Settings: flag thresholds -->
 <div class="modal-overlay" id="settingsModal" style="display:none;">
   <div class="modal" style="width:560px;">
-    <h2 class="display">Flag rules</h2>
-    <p>Thresholds that trigger flags across all deals.</p>
+    <h2 class="display">⚙ Settings</h2>
+    <p style="background:var(--blue-bg); border:1px solid #c7d6f7; border-radius:6px; padding:10px 13px; font-size:12px; color:var(--blue); margin-bottom:16px;">
+      <strong>First time?</strong> Paste your Apps Script URL and Anthropic API key below, then click Save. Teammates only need the Apps Script URL.
+    </p>
 
     <label>Rebate threshold (% of TCV)</label>
     <input type="number" id="setRebatePct" min="0" max="100" step="1" />
@@ -1434,7 +1398,7 @@
       addNotice({
         id: 'how-it-works', type: 'blue',
         title: 'How this works',
-        body: 'Open this tool inside Claude (claude.ai → GTMS Deal Intake project) so deals sync with the team. &nbsp; 1. Click <strong>+ New intake</strong> to start a deal &nbsp; 2. Paste the SFDC Opp ID and click <strong>⚡ Sync from Salesforce</strong> — fields populate automatically &nbsp; 3. Review flags, attach the order form &nbsp; 4. Click <strong>✓ Save &amp; back to deals</strong> when done.',
+        body: '<strong>First time setup (2 min):</strong> Click <strong>⚙ Settings</strong> → paste your Apps Script URL (Google Sheets backend) and Anthropic API key → Save. &nbsp; Then: &nbsp; 1. Click <strong>+ New intake</strong> &nbsp; 2. Paste Opp ID → click <strong>⚡ Sync</strong> — fields populate automatically &nbsp; 3. Review flags, attach order form &nbsp; 4. <strong>✓ Save</strong> — deal is instantly visible to your whole team. &nbsp; Teammates only need to paste the Apps Script URL in their Settings once.',
       });
     }
   }
@@ -2586,11 +2550,19 @@ Return raw JSON only.`;
     btn.textContent='Syncing...';
 
     try {
-      // Get API key — injected automatically on claude.ai, otherwise from localStorage
       var apiKey = localStorage_safe('di_anthropic_key') || '';
-      var headers = { 'Content-Type': 'application/json' };
-      if (apiKey && !apiKey.startsWith('•')) headers['x-api-key'] = apiKey;
-
+      if (!apiKey || apiKey.startsWith('•')) {
+        status.style.display='block';
+        status.textContent='Add your Anthropic API key in Settings (⚙) first';
+        btn.textContent='⚡ Sync from Salesforce'; btn.disabled=false;
+        return;
+      }
+      var headers = {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true',
+      };
       var resp = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
         headers: headers,
@@ -2700,9 +2672,15 @@ Return raw JSON only.`;
 
       let response;
       try {
+        const apiKey2 = localStorage_safe('di_anthropic_key') || '';
         response = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': apiKey2,
+          'anthropic-version': '2023-06-01',
+          'anthropic-dangerous-direct-browser-access': 'true',
+        },
         body: JSON.stringify({
           model: 'claude-sonnet-4-20250514',
           max_tokens: 4000,
