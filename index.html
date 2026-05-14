@@ -1,0 +1,3322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Deal Intake</title>
+</head>
+<body>
+<!-- Deal Intake — v4 (with SFDC custom field mapping: Custom_Schedule__c, Flex_Has_Non_Standard_Terms__c, Non_Standard_terms_description__c, Payment_Terms__c, Selected_Payment_Type__c, License_Term__c, Sum_of_Rebates__c, Buyout_Amount__c, Subsidy_Amount__c) -->
+<style>
+  :root {
+    /* Samsara brand palette */
+    --ink: #00263E;          /* Samsara navy (primary) */
+    --ink-2: #1a3a52;
+    --muted: #5a6b7d;
+    --muted-2: #8a98a8;
+    --line: #d8e0e8;
+    --line-2: #eaeff4;
+    --bg: #f5f7fa;           /* cool off-white */
+    --card: #ffffff;
+    --accent: #c9302c;
+    --accent-bg: #fef2f2;
+    --green: #15803d;
+    --green-bg: #f0fdf4;
+    --amber: #b45309;
+    --amber-bg: #fffbeb;
+    --blue: #00263E;         /* navy stand-in for accent blue */
+    --blue-bg: #e8eef3;
+    --slate-bg: #eef2f6;
+    --purple: #7c3aed;
+    --purple-bg: #f5f3ff;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=JetBrains+Mono:wght@400;500;600&family=Inter:wght@400;500;600;700&display=swap');
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: var(--bg); color: var(--ink);
+    font-size: 13px; line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+  .display { font-family: 'Fraunces', serif; letter-spacing: -0.02em; }
+  .mono { font-family: 'JetBrains Mono', monospace; }
+  .app { min-height: 100vh; display: flex; flex-direction: column; }
+
+  header {
+    border-bottom: 1px solid var(--line);
+    background: var(--card);
+    padding: 14px 24px;
+    display: flex; align-items: center; gap: 24px;
+  }
+  .logo {
+    font-family: 'Fraunces', serif; font-weight: 600; font-size: 19px;
+    letter-spacing: -0.02em; display: flex; align-items: center; gap: 12px;
+  }
+  .brand-logo {
+    height: 22px; width: auto; display: block;
+  }
+  .brand-divider {
+    width: 1px; height: 20px; background: var(--line); display: inline-block;
+  }
+  .brand-app {
+    color: var(--ink); font-size: 17px;
+  }
+  .logo-mark {
+    width: 22px; height: 22px;
+    background: var(--ink); border-radius: 4px;
+    display: grid; place-items: center;
+    color: white; font-size: 12px; font-weight: 700;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .header-meta {
+    margin-left: auto; display: flex; align-items: center; gap: 16px;
+    color: var(--muted); font-size: 12px;
+  }
+  .header-meta .dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--green); display: inline-block; margin-right: 6px;
+  }
+  .user-pill {
+    background: var(--slate-bg); padding: 5px 10px; border-radius: 6px;
+    font-weight: 500; color: var(--ink); cursor: pointer; font-size: 12px;
+  }
+  .user-pill:hover { background: var(--line); }
+  .help-link {
+    color: var(--muted); cursor: pointer; font-size: 12px;
+    border-bottom: 1px dotted var(--muted-2);
+  }
+  .help-link:hover { color: var(--ink); border-color: var(--ink); }
+
+  .tip-strip {
+    background: #1c2733; color: rgba(255,255,255,0.92);
+    padding: 8px 24px; border-bottom: 1px solid var(--line);
+    font-size: 12px; display: flex; align-items: center; gap: 14px;
+    flex-wrap: wrap;
+  }
+  .tip-strip .tip-label {
+    font-family: 'JetBrains Mono', monospace; font-size: 10px; font-weight: 600;
+    letter-spacing: 0.08em; text-transform: uppercase; opacity: 0.65;
+  }
+  .tip-strip .tip-step { opacity: 0.85; }
+  .tip-strip .tip-step strong { font-weight: 600; opacity: 1; color: white; }
+  .tip-strip .tip-divider { opacity: 0.3; }
+
+  /* Quick Start card — prominent, on-brand, dismissible */
+  .quickstart {
+    margin: 16px 24px 0;
+    background: linear-gradient(135deg, #ffffff 0%, #eef3f8 100%);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 18px 22px;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 18px;
+    align-items: center;
+    box-shadow: 0 1px 2px rgba(0,38,62,0.04);
+    position: relative;
+  }
+  .quickstart-content { min-width: 0; }
+  .quickstart-eyebrow {
+    font-family: 'JetBrains Mono', monospace; font-size: 10px; font-weight: 600;
+    letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--ink); margin-bottom: 6px;
+  }
+  .quickstart-title {
+    font-family: 'Fraunces', serif; font-weight: 600; font-size: 19px;
+    color: var(--ink); letter-spacing: -0.01em; margin-bottom: 4px;
+  }
+  .quickstart-sub { font-size: 12.5px; color: var(--muted); margin-bottom: 14px; }
+  .quickstart-steps {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;
+  }
+  .qs-step {
+    background: #ffffff;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 10px 12px;
+    font-size: 12px; color: var(--ink);
+    display: flex; align-items: flex-start; gap: 8px;
+  }
+  .qs-step-num {
+    width: 18px; height: 18px; flex-shrink: 0;
+    background: var(--ink); color: white; border-radius: 50%;
+    font-size: 10px; font-weight: 700;
+    display: grid; place-items: center; margin-top: 1px;
+  }
+  .qs-step-text { line-height: 1.45; }
+  .qs-step-text strong { font-weight: 600; }
+  .quickstart-cta {
+    display: flex; flex-direction: column; gap: 8px; align-items: stretch;
+    position: relative; z-index: 2;
+  }
+  .quickstart-cta .btn-primary { padding: 13px 22px; font-size: 14px; }
+  .quickstart-dismiss {
+    position: absolute; top: 10px; right: 12px;
+    background: transparent; border: 0;
+    color: var(--muted); opacity: 0.7; cursor: pointer;
+    font-size: 16px; line-height: 1; padding: 0;
+    border-radius: 4px;
+    width: 24px; height: 24px;
+    display: grid; place-items: center;
+    z-index: 1;
+  }
+  .quickstart-dismiss:hover { opacity: 1; background: var(--slate-bg); }
+  @media (max-width: 900px) {
+    .quickstart { grid-template-columns: 1fr; }
+    .quickstart-steps { grid-template-columns: 1fr 1fr; }
+  }
+  @media (max-width: 540px) {
+    .quickstart-steps { grid-template-columns: 1fr; }
+  }
+
+  /* Make the toolbar New Intake button visually dominant — navy, separated */
+  .btn-cta {
+    background: var(--ink); color: #ffffff; border-color: var(--ink);
+    box-shadow: 0 1px 3px rgba(0,38,62,0.25);
+  }
+  .btn-cta:hover:not(:disabled),
+  .btn-cta:focus:not(:disabled),
+  .btn-cta:active:not(:disabled) {
+    background: var(--ink-2); border-color: var(--ink-2); color: #ffffff;
+    box-shadow: 0 2px 6px rgba(0,38,62,0.35);
+  }
+  .toolbar-spacer { flex: 1; }
+
+  .notices-strip { padding: 0 24px; background: var(--bg); }
+  .notice {
+    margin-top: 12px; padding: 10px 14px; border-radius: 6px;
+    font-size: 12.5px; display: flex; gap: 10px; align-items: flex-start;
+    border: 1px solid;
+  }
+  .notice-icon {
+    width: 18px; height: 18px; flex-shrink: 0;
+    border-radius: 50%; display: grid; place-items: center;
+    font-weight: 700; font-size: 11px; margin-top: 1px;
+  }
+  .notice-amber { background: var(--amber-bg); border-color: #fde68a; color: var(--amber); }
+  .notice-amber .notice-icon { background: var(--amber); color: white; }
+  .notice-blue { background: var(--blue-bg); border-color: #c7d6f7; color: var(--blue); }
+  .notice-blue .notice-icon { background: var(--blue); color: white; }
+  .notice-red { background: var(--accent-bg); border-color: #fecaca; color: var(--accent); }
+  .notice-red .notice-icon { background: var(--accent); color: white; }
+  .notice-close {
+    margin-left: auto; background: transparent; border: none;
+    cursor: pointer; color: inherit; opacity: 0.5;
+    padding: 2px 6px; font-size: 14px;
+  }
+  .notice-close:hover { opacity: 1; }
+  .notice-body { flex: 1; }
+  .notice-body strong { font-weight: 600; display: block; margin-bottom: 2px; }
+  .notice-body a { color: inherit; text-decoration: underline; }
+
+  .modal-overlay {
+    position: fixed; inset: 0;
+    background: rgba(15, 20, 25, 0.5);
+    backdrop-filter: blur(4px);
+    display: grid; place-items: center;
+    z-index: 100; padding: 16px;
+  }
+  .modal {
+    background: var(--card); border-radius: 12px;
+    padding: 32px; width: 460px; max-width: 100%;
+    max-height: calc(100vh - 32px); overflow-y: auto;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+  }
+  .modal h2 { font-family: 'Fraunces', serif; font-size: 24px; margin-bottom: 6px; letter-spacing: -0.02em; }
+  .modal p { color: var(--muted); margin-bottom: 20px; }
+  .modal input, .modal select, .modal textarea {
+    width: 100%; padding: 10px 12px;
+    border: 1px solid var(--line); border-radius: 6px;
+    font-size: 14px; font-family: inherit; margin-bottom: 12px;
+  }
+  .modal input:focus, .modal select:focus, .modal textarea:focus {
+    outline: 2px solid var(--ink); outline-offset: -1px; border-color: var(--ink);
+  }
+  .modal textarea { min-height: 70px; resize: vertical; }
+  .modal label {
+    display: block; font-size: 11px;
+    text-transform: uppercase; letter-spacing: 0.06em;
+    font-weight: 600; color: var(--muted); margin-bottom: 4px;
+  }
+
+  .btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 7px 13px; background: var(--card);
+    border: 1px solid var(--line); border-radius: 6px;
+    font-size: 12.5px; font-weight: 500; color: var(--ink);
+    cursor: pointer; font-family: inherit; transition: all 0.12s;
+  }
+  .btn:hover:not(:disabled) { border-color: var(--ink-2); }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .btn-primary { background: var(--ink); color: #ffffff; border-color: var(--ink); }
+  .btn-primary:hover:not(:disabled),
+  .btn-primary:focus:not(:disabled),
+  .btn-primary:active:not(:disabled) {
+    background: var(--ink-2); border-color: var(--ink-2); color: #ffffff;
+  }
+  .btn-danger { background: var(--card); color: var(--accent); border-color: var(--line); }
+  .btn-danger:hover { background: var(--accent-bg); border-color: var(--accent); }
+  .btn-sm { padding: 4px 9px; font-size: 11.5px; }
+  .btn-lg { padding: 11px 20px; font-size: 14px; font-weight: 600; }
+  .btn-ghost { background: transparent; border-color: transparent; }
+  .btn-ghost:hover { background: var(--slate-bg); }
+  .btn-primary.btn-pulse {
+    box-shadow: 0 0 0 0 rgba(0, 38, 62, 0.5);
+    animation: pulseShadow 2.4s ease-out infinite;
+  }
+  @keyframes pulseShadow {
+    0% { box-shadow: 0 0 0 0 rgba(0, 38, 62, 0.45); }
+    70% { box-shadow: 0 0 0 12px rgba(0, 38, 62, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(0, 38, 62, 0); }
+  }
+
+  .toolbar {
+    padding: 16px 24px; border-bottom: 1px solid var(--line);
+    display: flex; align-items: center; gap: 12px;
+    background: var(--card); flex-wrap: wrap;
+  }
+  .search { flex: 1; max-width: 320px; min-width: 200px; position: relative; }
+  .search input {
+    width: 100%; padding: 7px 12px 7px 32px;
+    border: 1px solid var(--line); border-radius: 6px;
+    font-size: 12.5px; font-family: inherit; background: var(--bg);
+  }
+  .search input:focus { outline: none; border-color: var(--ink-2); background: var(--card); }
+  .search::before {
+    content: ''; position: absolute; left: 10px; top: 50%; transform: translateY(-50%);
+    width: 14px; height: 14px;
+    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236b7785' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cline x1='21' y1='21' x2='16.65' y2='16.65'/%3E%3C/svg%3E") center/contain no-repeat;
+  }
+  .filter-pills { display: flex; gap: 6px; flex-wrap: wrap; }
+  .filter-pill {
+    padding: 5px 10px; border-radius: 14px;
+    background: var(--slate-bg); color: var(--muted);
+    font-size: 11.5px; font-weight: 500;
+    cursor: pointer; border: 1px solid transparent;
+  }
+  .filter-pill:hover { background: var(--line); }
+  .filter-pill.active { background: var(--ink); color: white; }
+  .filter-pill.flagged-active { background: var(--amber); color: white; }
+
+  .stats {
+    padding: 20px 24px;
+    display: grid; grid-template-columns: repeat(5, 1fr); gap: 16px;
+    border-bottom: 1px solid var(--line); background: var(--card);
+  }
+  .stat { display: flex; flex-direction: column; }
+  .stat-label {
+    font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em;
+    color: var(--muted); font-weight: 600; margin-bottom: 6px;
+  }
+  .stat-value {
+    font-family: 'Fraunces', serif; font-size: 24px; font-weight: 500;
+    letter-spacing: -0.02em; line-height: 1.1;
+  }
+  .stat-meta { font-size: 11.5px; color: var(--muted); margin-top: 4px; }
+
+  .table-wrap { padding: 0 24px 24px; }
+  .table-card {
+    background: var(--card); border: 1px solid var(--line);
+    border-radius: 8px; overflow: hidden; margin-top: 16px;
+  }
+  table { width: 100%; border-collapse: collapse; }
+  th {
+    text-align: left; font-size: 11px;
+    text-transform: uppercase; letter-spacing: 0.08em;
+    font-weight: 600; color: var(--muted);
+    padding: 11px 14px; background: var(--bg);
+    border-bottom: 1px solid var(--line); white-space: nowrap;
+    cursor: pointer; user-select: none;
+  }
+  th:hover { color: var(--ink); }
+  th.sorted::after { content: ' ↓'; color: var(--ink); }
+  th.sorted-asc::after { content: ' ↑'; color: var(--ink); }
+  td {
+    padding: 12px 14px; border-bottom: 1px solid var(--line-2);
+    font-size: 13px; vertical-align: middle;
+  }
+  tbody tr { cursor: pointer; transition: background 0.08s; }
+  tbody tr:hover { background: var(--bg); }
+  tbody tr:last-child td { border-bottom: none; }
+  .deal-name { font-weight: 600; color: var(--ink); margin-bottom: 2px; }
+  .deal-account { color: var(--muted); font-size: 12px; }
+  .opp-id {
+    font-family: 'JetBrains Mono', monospace; font-size: 11.5px;
+    color: var(--muted); background: var(--slate-bg);
+    padding: 2px 6px; border-radius: 3px; display: inline-block;
+  }
+  .amount {
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 500; font-variant-numeric: tabular-nums;
+  }
+  .flag-count {
+    display: inline-flex; align-items: center; gap: 4px;
+    background: var(--amber-bg); color: var(--amber);
+    padding: 2px 7px; border-radius: 10px;
+    font-size: 11px; font-weight: 600;
+    margin-left: 6px;
+  }
+  .flag-count::before { content: '⚑'; font-size: 10px; }
+  .flag-count.zero { background: var(--green-bg); color: var(--green); }
+  .flag-count.zero::before { content: '✓'; }
+
+  .badge {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 3px 8px; border-radius: 4px;
+    font-size: 11.5px; font-weight: 500; white-space: nowrap;
+  }
+  .badge::before { content: ''; width: 6px; height: 6px; border-radius: 50%; }
+  .badge-stage-discovery { background: var(--slate-bg); color: var(--ink-2); }
+  .badge-stage-discovery::before { background: var(--muted); }
+  .badge-stage-proposal { background: var(--blue-bg); color: var(--blue); }
+  .badge-stage-proposal::before { background: var(--blue); }
+  .badge-stage-negotiation { background: var(--amber-bg); color: var(--amber); }
+  .badge-stage-negotiation::before { background: var(--amber); }
+  .badge-stage-decision { background: var(--amber-bg); color: var(--amber); }
+  .badge-stage-decision::before { background: var(--amber); }
+  .badge-stage-closed-won { background: var(--green-bg); color: var(--green); }
+  .badge-stage-closed-won::before { background: var(--green); }
+  .badge-stage-closed-lost { background: var(--accent-bg); color: var(--accent); }
+  .badge-stage-closed-lost::before { background: var(--accent); }
+
+  .status-dot {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 12px; color: var(--ink-2);
+  }
+  .status-dot::before { content: ''; width: 7px; height: 7px; border-radius: 50%; }
+  .status-not-started::before { background: var(--muted-2); }
+  .status-in-progress::before { background: var(--amber); }
+  .status-needs-review::before { background: var(--blue); }
+  .status-complete::before { background: var(--green); }
+  .status-blocked::before { background: var(--accent); }
+
+  .empty-state { text-align: center; padding: 60px 20px; color: var(--muted); }
+  .empty-state .display { font-size: 22px; color: var(--ink); margin-bottom: 6px; }
+
+  .detail-view { display: none; flex-direction: column; flex: 1; background: var(--bg); }
+  .detail-view.active { display: flex; }
+  .board-view.hidden { display: none; }
+
+  .detail-header {
+    background: var(--card); border-bottom: 1px solid var(--line);
+    padding: 16px 24px;
+  }
+  .breadcrumb {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 12px; color: var(--muted); margin-bottom: 12px;
+  }
+  .breadcrumb a { color: var(--muted); cursor: pointer; }
+  .breadcrumb a:hover { color: var(--ink); }
+  .detail-title-row { display: flex; align-items: flex-start; gap: 16px; flex-wrap: wrap; }
+  .detail-title {
+    font-family: 'Fraunces', serif; font-size: 26px; font-weight: 500;
+    letter-spacing: -0.02em; flex: 1 1 320px; min-width: 0; overflow-wrap: break-word;
+  }
+  .detail-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+  .last-edit { font-size: 11.5px; color: var(--muted); margin-top: 4px; }
+  @media (max-width: 900px) {
+    .detail-title { font-size: 22px; flex-basis: 100%; }
+    .detail-actions { flex-basis: 100%; }
+  }
+
+  .detail-body {
+    flex: 1; padding: 24px;
+    display: grid; grid-template-columns: 2fr 1fr; gap: 20px;
+    align-content: start; max-width: 1400px;
+    width: 100%; margin: 0 auto;
+  }
+  @media (max-width: 900px) {
+    .detail-body { grid-template-columns: 1fr; padding: 16px; }
+  }
+
+  .section {
+    background: var(--card); border: 1px solid var(--line);
+    border-radius: 8px; overflow: hidden;
+  }
+  .section-header {
+    padding: 14px 18px; border-bottom: 1px solid var(--line);
+    display: flex; align-items: center; gap: 10px;
+  }
+  .section-title {
+    font-family: 'Fraunces', serif; font-size: 15px;
+    font-weight: 600; letter-spacing: -0.01em;
+  }
+  .section-meta { margin-left: auto; font-size: 11.5px; color: var(--muted); }
+  .section-body { padding: 18px; }
+
+  .field-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; }
+  .field { display: flex; flex-direction: column; gap: 4px; position: relative; }
+  .field.full { grid-column: 1 / -1; }
+  .field label {
+    font-size: 11px; text-transform: uppercase;
+    letter-spacing: 0.06em; font-weight: 600; color: var(--muted);
+    display: flex; align-items: center; gap: 6px;
+  }
+  .field input, .field select, .field textarea {
+    padding: 8px 10px; border: 1px solid var(--line);
+    border-radius: 5px; font-size: 13px; font-family: inherit;
+    background: var(--card); color: var(--ink);
+    transition: border-color 0.1s;
+  }
+  .section-collapsible { padding: 0; }
+  .section-collapsible > summary { list-style: none; }
+  .section-collapsible > summary::-webkit-details-marker { display: none; }
+  .section-collapsible[open] > summary > span:last-child { display: none; }
+  .section-collapsible:not([open]) > summary { border-bottom: none; }
+
+  .field input:focus, .field select:focus, .field textarea:focus { outline: none; border-color: var(--ink); }
+  .field textarea { resize: vertical; min-height: 70px; line-height: 1.5; }
+  .readonly-value {
+    padding: 7px 10px; border: 1px dashed var(--line);
+    border-radius: 4px; background: var(--bg);
+    font-size: 13px; color: var(--ink-2); min-height: 32px;
+    display: flex; align-items: center;
+  }
+  .readonly-value.empty { color: var(--muted-2); font-style: italic; }
+  .readonly-chips {
+    display: flex; flex-wrap: wrap; gap: 6px;
+    padding: 6px 8px; border: 1px dashed var(--line);
+    border-radius: 4px; background: var(--bg); min-height: 34px;
+    align-items: center;
+  }
+  .readonly-chips.empty { color: var(--muted-2); font-style: italic; font-size: 13px; padding: 7px 10px; }
+  .readonly-chip {
+    display: inline-flex; align-items: center;
+    padding: 3px 8px; border-radius: 4px;
+    background: var(--slate-bg); color: var(--ink-2);
+    font-size: 11.5px; font-weight: 500; white-space: nowrap;
+  }
+  .filter-select {
+    height: 32px; padding: 0 28px 0 10px;
+    background: var(--card); border: 1px solid var(--line); border-radius: 6px;
+    color: var(--ink); font-size: 12.5px; cursor: pointer;
+    appearance: none; -webkit-appearance: none;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10'><path d='M2 4l3 3 3-3' stroke='%23667' stroke-width='1.4' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>");
+    background-repeat: no-repeat; background-position: right 8px center;
+    max-width: 180px;
+  }
+  .filter-select:hover { border-color: var(--ink-2); }
+  .filter-select:focus { outline: none; border-color: var(--ink); }
+  .row-delete-btn {
+    background: transparent; border: 1px solid var(--line);
+    color: var(--muted); width: 26px; height: 26px;
+    border-radius: 4px; cursor: pointer; font-size: 16px;
+    line-height: 1; padding: 0; opacity: 0.55; transition: opacity 0.1s, background 0.1s, color 0.1s, border-color 0.1s;
+  }
+  tbody tr:hover .row-delete-btn { opacity: 1; }
+  .row-delete-btn:hover { background: var(--accent-bg); color: var(--accent); border-color: var(--accent); opacity: 1; }
+  .field-mono input { font-family: 'JetBrains Mono', monospace; }
+  .field.flagged input, .field.flagged select, .field.flagged textarea {
+    border-color: #fde68a; background: #fffbf2;
+  }
+  .field-flag {
+    display: inline-block;
+    background: var(--amber); color: white;
+    border-radius: 3px;
+    font-size: 9.5px; font-weight: 700;
+    padding: 1px 5px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .checkbox-field {
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 10px;
+    border: 1px solid var(--line); border-radius: 5px;
+    background: var(--card); cursor: pointer;
+    font-size: 13px;
+  }
+  .checkbox-field:hover { border-color: var(--ink-2); }
+  .checkbox-field input[type="checkbox"] {
+    margin: 0; padding: 0; width: 14px; height: 14px;
+  }
+
+  .sfdc-section { background: linear-gradient(180deg, #fafaf7 0%, #f5f5f0 100%); }
+  .sfdc-flow { padding: 16px 18px; }
+  .sfdc-step {
+    display: flex; gap: 12px; align-items: flex-start;
+    padding: 10px 0; border-bottom: 1px dashed var(--line);
+  }
+  .sfdc-step:last-child { border-bottom: none; }
+  .sfdc-step-num {
+    width: 24px; height: 24px;
+    background: var(--ink); color: white; border-radius: 50%;
+    display: grid; place-items: center;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; font-weight: 600;
+    flex-shrink: 0; margin-top: 1px;
+  }
+  .sfdc-step.done .sfdc-step-num { background: var(--green); }
+  .sfdc-step.done .sfdc-step-num::before { content: '✓'; }
+  .sfdc-step.done .sfdc-step-num span { display: none; }
+  .sfdc-step-body { flex: 1; min-width: 0; }
+  .sfdc-step-title { font-weight: 600; font-size: 13px; margin-bottom: 4px; }
+  .sfdc-step-desc { font-size: 12px; color: var(--muted); margin-bottom: 8px; line-height: 1.5; }
+  .sfdc-step-action { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .sfdc-input-row { display: flex; gap: 8px; align-items: stretch; width: 100%; }
+  .sfdc-input-row input {
+    flex: 1; padding: 7px 10px;
+    border: 1px solid var(--line); border-radius: 5px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px; background: white;
+  }
+  .sfdc-input-row input:focus { outline: none; border-color: var(--ink); }
+  .prompt-preview {
+    background: white; border: 1px solid var(--line); border-radius: 5px;
+    padding: 10px 12px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11.5px; line-height: 1.5; color: var(--ink-2);
+    margin-bottom: 8px; white-space: pre-wrap; word-break: break-word;
+    max-height: 200px; overflow-y: auto;
+  }
+  .json-paste-area {
+    width: 100%; min-height: 100px;
+    padding: 10px 12px;
+    border: 1px solid var(--line); border-radius: 5px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11.5px; line-height: 1.5;
+    background: white; resize: vertical; margin-bottom: 8px;
+  }
+  .json-paste-area:focus { outline: none; border-color: var(--ink); }
+  .json-paste-area.error { border-color: var(--accent); background: var(--accent-bg); }
+  .step-disabled .sfdc-step-action { opacity: 0.5; pointer-events: none; }
+
+  .line-items-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+  .line-items-table th {
+    background: transparent; padding: 8px 10px;
+    cursor: default; border-bottom: 1px solid var(--line);
+  }
+  .line-items-table td { padding: 6px 8px; border-bottom: 1px solid var(--line-2); }
+  .line-items-table input, .line-items-table select {
+    width: 100%; border: 1px solid transparent;
+    background: transparent; padding: 5px 6px;
+    border-radius: 4px; font-size: 12.5px; font-family: inherit; color: var(--ink);
+  }
+  .line-items-table input:hover, .line-items-table select:hover { background: var(--bg); }
+  .line-items-table input:focus, .line-items-table select:focus {
+    outline: none; background: var(--card); border-color: var(--ink);
+  }
+  .line-items-table input.mono-cell {
+    font-family: 'JetBrains Mono', monospace;
+    text-align: right; font-variant-numeric: tabular-nums;
+  }
+  .line-items-table tfoot td {
+    border-bottom: none; border-top: 1px solid var(--line);
+    padding-top: 12px; font-weight: 600;
+  }
+  .line-items-actions {
+    padding: 12px 18px; border-top: 1px solid var(--line);
+    background: var(--bg); display: flex; align-items: center; gap: 8px;
+    flex-wrap: wrap;
+  }
+  .delete-row-btn {
+    background: transparent; border: none;
+    cursor: pointer; color: var(--muted);
+    padding: 4px; border-radius: 3px;
+    width: 22px; height: 22px;
+    display: grid; place-items: center;
+  }
+  .delete-row-btn:hover { background: var(--accent-bg); color: var(--accent); }
+  .line-flag {
+    display: inline-block; padding: 1px 6px;
+    background: var(--amber-bg); color: var(--amber);
+    border-radius: 3px; font-size: 10.5px;
+    margin-left: 4px; font-weight: 500;
+  }
+
+  /* Flags review section */
+  .flags-section {
+    background: linear-gradient(180deg, #fffbf2 0%, #fef9ec 100%);
+    border-color: #fde68a;
+  }
+  .flags-section .section-header { border-bottom-color: #fde68a; }
+  .flag-list { padding: 0; }
+  .flag-item {
+    padding: 12px 18px;
+    border-bottom: 1px solid #fde68a;
+    display: flex; gap: 12px; align-items: flex-start;
+  }
+  .flag-item:last-child { border-bottom: none; }
+  .flag-item.severity-critical { background: rgba(201, 48, 44, 0.04); border-left: 3px solid var(--accent); }
+  .flag-item.severity-warning { border-left: 3px solid var(--amber); }
+  .flag-item.severity-info { border-left: 3px solid var(--blue); }
+  .flag-icon {
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 700; font-size: 11px;
+    width: 22px; height: 22px;
+    border-radius: 50%; flex-shrink: 0;
+    display: grid; place-items: center;
+    color: white;
+  }
+  .severity-critical .flag-icon { background: var(--accent); }
+  .severity-warning .flag-icon { background: var(--amber); }
+  .severity-info .flag-icon { background: var(--blue); }
+  .flag-body { flex: 1; min-width: 0; }
+  .flag-title { font-weight: 600; font-size: 12.5px; margin-bottom: 2px; }
+  .flag-desc { font-size: 12px; color: var(--ink-2); }
+  .flag-meta { font-size: 11px; color: var(--muted); margin-top: 4px; }
+  .flag-actions { display: flex; gap: 6px; align-items: center; flex-shrink: 0; }
+  .flag-resolve-pill {
+    background: var(--green-bg); color: var(--green);
+    padding: 2px 7px; border-radius: 10px;
+    font-size: 11px; font-weight: 600;
+    cursor: pointer;
+  }
+  .flag-resolve-pill:hover { background: var(--green); color: white; }
+  .flag-item.resolved { opacity: 0.55; background: rgba(21, 128, 61, 0.04); border-left-color: var(--green); }
+  .flag-item.resolved .flag-icon { background: var(--green); }
+  .flag-item.resolved .flag-title { text-decoration: line-through; }
+  .flags-empty { padding: 24px; text-align: center; color: var(--muted); font-size: 12.5px; }
+
+  /* Attachments */
+  .attachments-list { padding: 0; }
+  .attachment-item {
+    padding: 12px 18px;
+    border-bottom: 1px solid var(--line);
+    display: flex; gap: 12px; align-items: flex-start;
+  }
+  .attachment-item:last-child { border-bottom: none; }
+  .attachment-icon {
+    width: 32px; height: 36px;
+    background: var(--card); border: 1px solid var(--line);
+    border-radius: 4px;
+    display: grid; place-items: center;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9.5px; font-weight: 700;
+    color: var(--muted);
+    flex-shrink: 0;
+  }
+  .attachment-icon.is-current { border-color: var(--green); color: var(--green); background: var(--green-bg); }
+  .attachment-body { flex: 1; min-width: 0; }
+  .attachment-name {
+    font-weight: 600; font-size: 13px;
+    margin-bottom: 2px;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .attachment-name a { color: var(--ink); text-decoration: none; }
+  .attachment-name a:hover { text-decoration: underline; color: var(--blue); }
+  .attachment-meta { font-size: 11.5px; color: var(--muted); display: flex; gap: 8px; flex-wrap: wrap; }
+  .attachment-version-pill {
+    background: var(--slate-bg); color: var(--ink-2);
+    padding: 1px 6px; border-radius: 3px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10.5px; font-weight: 600;
+  }
+  .attachment-version-pill.current { background: var(--green); color: white; }
+  .attachment-notes {
+    font-size: 11.5px; color: var(--ink-2);
+    background: var(--bg); padding: 6px 8px;
+    border-radius: 4px; margin-top: 6px;
+    font-style: italic;
+    border-left: 2px solid var(--line);
+  }
+  .attachment-actions { display: flex; gap: 4px; flex-shrink: 0; }
+
+  .activity-item {
+    padding: 12px 0; border-bottom: 1px solid var(--line-2);
+    font-size: 12px;
+  }
+  .activity-item:last-child { border-bottom: none; }
+  .activity-meta { color: var(--muted); font-size: 11.5px; margin-top: 2px; }
+  .activity-actor { font-weight: 600; color: var(--ink); }
+
+  .toast-wrap {
+    position: fixed; bottom: 24px; right: 24px;
+    display: flex; flex-direction: column; gap: 8px; z-index: 200;
+  }
+  .toast {
+    background: var(--ink); color: white;
+    padding: 10px 14px; border-radius: 6px;
+    font-size: 12.5px; box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+    animation: slideIn 0.2s ease-out; max-width: 360px;
+  }
+  .toast.success { background: var(--green); }
+  .toast.error { background: var(--accent); }
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .push-content {
+    background: var(--bg); border: 1px solid var(--line);
+    border-radius: 6px; padding: 14px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11.5px; line-height: 1.6;
+    white-space: pre-wrap; max-height: 320px;
+    overflow-y: auto; margin-bottom: 16px;
+  }
+
+  details.thresholds {
+    border: 1px solid var(--line); border-radius: 6px;
+    background: var(--bg); padding: 0;
+    margin-top: 12px;
+  }
+  details.thresholds[open] { background: var(--card); }
+  details.thresholds summary {
+    padding: 10px 14px; cursor: pointer; font-size: 12px;
+    color: var(--muted); font-weight: 500;
+    list-style: none;
+  }
+  details.thresholds summary::-webkit-details-marker { display: none; }
+  details.thresholds summary::before {
+    content: '▸'; display: inline-block; margin-right: 6px;
+    transition: transform 0.15s; color: var(--muted);
+  }
+  details.thresholds[open] summary::before { transform: rotate(90deg); }
+  details.thresholds[open] summary { color: var(--ink); border-bottom: 1px solid var(--line); }
+  .threshold-grid { padding: 14px; display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+
+  @media (max-width: 1100px) {
+    .stats { grid-template-columns: repeat(3, 1fr); }
+  }
+  @media (max-width: 900px) {
+    .detail-body { grid-template-columns: 1fr; }
+    .stats { grid-template-columns: repeat(2, 1fr); }
+    .instructions-content { grid-template-columns: 1fr; }
+  }
+</style>
+
+<div class="app" id="app">
+  <header>
+    <div class="logo">
+      <img class="brand-logo" src="data:image/png;base64,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" alt="Samsara" />
+      <span class="brand-divider"></span>
+      <span class="brand-app">Deal Intake</span>
+    </div>
+    <div class="header-meta">
+      <span><span class="dot"></span>Salesforce via chat</span>
+      <span class="help-link" onclick="openSettings()">Flag rules</span>
+      <span class="help-link" onclick="toggleInstructions(true)">Help</span>
+      <div class="user-pill" id="userPill">—</div>
+    </div>
+  </header>
+
+  <div id="setupBanner" style="background:#1c2733; color:rgba(255,255,255,0.92); padding:10px 24px; font-size:12.5px; display:flex; align-items:center; gap:20px; flex-wrap:wrap; border-bottom:1px solid #2a3a4a;">
+    <span style="font-family:'JetBrains Mono',monospace; font-size:10px; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; opacity:0.55; flex-shrink:0;">How to use</span>
+    <span style="opacity:0.85;"><strong style="opacity:1; color:white;">1</strong> &nbsp;Click <strong style="opacity:1; color:white;">+ New intake</strong></span>
+    <span style="opacity:0.3;">›</span>
+    <span style="opacity:0.85;"><strong style="opacity:1; color:white;">2</strong> &nbsp;Paste Opp ID &amp; click <strong style="opacity:1; color:white;">⚡ Sync</strong> — Claude fetches Salesforce data &amp; posts JSON in chat</span>
+    <span style="opacity:0.3;">›</span>
+    <span style="opacity:0.85;"><strong style="opacity:1; color:white;">3</strong> &nbsp;Copy Claude's JSON &amp; paste into the box in the deal — fields populate instantly</span>
+    <span style="opacity:0.3;">›</span>
+    <span style="opacity:0.85;"><strong style="opacity:1; color:white;">4</strong> &nbsp;Review flags, attach order form, <strong style="opacity:1; color:white;">✓ Save</strong></span>
+    <button onclick="document.getElementById('setupBanner').style.display='none'" style="margin-left:auto; background:none; border:none; color:rgba(255,255,255,0.4); cursor:pointer; font-size:18px; line-height:1; padding:0 4px; flex-shrink:0;" title="Dismiss">&times;</button>
+  </div>
+  <div class="notices-strip" id="noticesStrip"></div>
+
+  <div class="board-view" id="boardView">
+    <div class="quickstart" id="quickstart">
+      <button class="quickstart-dismiss" onclick="dismissQuickstart()" title="Hide this">×</button>
+      <div class="quickstart-content">
+        <div class="quickstart-eyebrow">Quick start</div>
+        <div class="quickstart-title">Pull a deal from Salesforce in seconds</div>
+        <div class="quickstart-sub">Open this tool inside Claude (claude.ai → GTMS Deal Intake project) so your deals sync with the team. Each step takes about 5 seconds.</div>
+        <div class="quickstart-steps">
+          <div class="qs-step">
+            <span class="qs-step-num">1</span>
+            <span class="qs-step-text"><strong>New intake</strong> — click the button to open a new deal record.</span>
+          </div>
+          <div class="qs-step">
+            <span class="qs-step-num">2</span>
+            <span class="qs-step-text"><strong>Paste Opp ID</strong> — enter the Salesforce Opp ID or URL.</span>
+          </div>
+          <div class="qs-step">
+            <span class="qs-step-num">3</span>
+            <span class="qs-step-text"><strong>Sync</strong> — click ⚡ Sync from Salesforce. Fields populate automatically.</span>
+          </div>
+          <div class="qs-step">
+            <span class="qs-step-num">4</span>
+            <span class="qs-step-text"><strong>Review &amp; save</strong> — check flags, attach order form, save.</span>
+          </div>
+        </div>
+      </div>
+      <div class="quickstart-cta">
+        <button class="btn btn-cta btn-lg" onclick="newDeal()">＋ New intake</button>
+      </div>
+    </div>
+    <div class="toolbar">
+      <div class="search">
+        <input type="text" id="searchInput" placeholder="Search by deal name, account, Opp ID..." oninput="renderTable()" />
+      </div>
+      <select id="ownerFilter" class="filter-select" onchange="renderTable()" title="Filter by deal owner / AE">
+        <option value="">All owners</option>
+      </select>
+      <div class="filter-pills" id="stageFilters"></div>
+      <div class="toolbar-spacer"></div>
+      <button class="btn" onclick="exportAll()">Export all</button>
+      <button class="btn btn-cta btn-lg" onclick="newDeal()">＋ New intake</button>
+    </div>
+    <div class="stats" id="statsBar"></div>
+    <div class="table-wrap">
+      <div class="table-card">
+        <div style="overflow-x:auto; -webkit-overflow-scrolling:touch;">
+        <table id="dealTable" style="min-width:1100px;">
+          <thead><tr>
+            <th data-sort="dealName">Deal</th>
+            <th data-sort="oppId">Opp ID</th>
+            <th data-sort="stage">Stage</th>
+            <th data-sort="status">Intake</th>
+            <th data-sort="flagCount">Flags</th>
+            <th data-sort="owner">Owner / AE</th>
+            <th data-sort="customBilling">Custom billing</th>
+            <th data-sort="arr">ACV</th>
+            <th data-sort="tcv">TCV</th>
+            <th data-sort="closeDate" class="sorted">Close date</th>
+            <th data-sort="updatedAt">Last edit</th>
+            <th style="width:40px; cursor:default;"></th>
+          </tr></thead>
+          <tbody id="tableBody"></tbody>
+        </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="detail-view" id="detailView">
+    <div class="detail-header">
+      <div class="breadcrumb">
+        <a onclick="showBoard()">All deals</a>
+        <span>›</span>
+        <span id="breadcrumbName">—</span>
+      </div>
+      <div class="detail-title-row">
+        <div style="flex:1; min-width:0;">
+          <div class="detail-title display" id="detailTitle">—</div>
+          <div class="last-edit" id="lastEditMeta">—</div>
+          <div id="linkedDealsBanner" style="display:none; margin-top:6px; font-size:12px;"></div>
+        </div>
+        <div class="detail-actions">
+          <button class="btn" onclick="exportDeal()">Export .txt</button>
+          <button class="btn" onclick="exportDealToGoogleDocs()" title="Download an HTML file you can open in Google Docs (File → Open → Upload, or drag into Drive)">Export to Google Docs</button>
+          <button class="btn" onclick="openPushModal()">Generate push note</button>
+          <button class="btn btn-danger" onclick="deleteDeal()">Delete</button>
+          <button class="btn btn-primary" onclick="saveAndReturn()" title="Save changes and return to the deals list">✓ Save &amp; back to deals</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="detail-body">
+      <div style="display:flex; flex-direction:column; gap:20px;">
+        <!-- FLAGS SECTION (top of detail) -->
+        <div class="section flags-section" id="flagsSection">
+          <div class="section-header">
+            <div class="section-title">⚑ Review flags</div>
+            <div class="section-meta" id="flagsMeta">—</div>
+          </div>
+          <div class="flag-list" id="flagList"></div>
+        </div>
+
+        <!-- SFDC sync — v5 -->
+        <div class="section sfdc-section" id="sfdcSection">
+          <div class="section-header">
+            <div class="section-title">Salesforce sync</div>
+            <div class="section-meta" style="color:var(--green);">&#9679; live via Claude chat</div>
+          </div>
+          <div class="section-body">
+
+            <!-- Step 1: Opp ID + Sync button -->
+            <div style="margin-bottom:14px;">
+              <div style="font-size:11.5px; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:0.06em; margin-bottom:6px;">Step 1 — Trigger sync</div>
+              <div class="sfdc-input-row">
+                <input type="text" id="sfdcInput" placeholder="Paste Opp ID or Salesforce URL..." style="flex:1;" />
+                <button class="btn btn-primary" id="sfdcSyncBtn" onclick="doSync()">&#9889; Sync from Salesforce</button>
+              </div>
+              <div id="sfdcSyncStatus" style="display:none; font-size:12px; color:var(--muted); padding:6px 10px; background:var(--bg); border-radius:6px; border:1px solid var(--line); margin-top:8px;"></div>
+            </div>
+
+            <!-- Step 2: Paste JSON back -->
+            <div style="border-top:1px solid var(--line-2); padding-top:14px;">
+              <div style="font-size:11.5px; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:0.06em; margin-bottom:4px;">Step 2 — Paste Claude's reply</div>
+              <div style="font-size:12px; color:var(--muted); margin-bottom:8px;">After clicking Sync, Claude will post a JSON block in chat. Copy it and paste here — fields populate instantly.</div>
+              <textarea id="sfdcAutoJson" rows="5" style="width:100%; font-family:'JetBrains Mono',monospace; font-size:11px; padding:10px; border:1.5px solid var(--line); border-radius:6px; resize:vertical; background:var(--bg); transition:border-color 0.15s;" placeholder='{"dealName":"...","account":"...","tcv":...}'  onpaste="setTimeout(function(){ doApply(); }, 80)"></textarea>
+              <div style="display:flex; align-items:center; gap:10px; margin-top:8px;">
+                <button class="btn btn-primary" onclick="doApply()" style="padding:8px 18px;">&#10003; Apply to deal</button>
+                <span style="font-size:11.5px; color:var(--muted);">or it applies automatically on paste</span>
+                <button class="btn btn-ghost btn-sm" onclick="document.getElementById('sfdcAutoJson').value=''" style="margin-left:auto;">Clear</button>
+              </div>
+            </div>
+
+            <textarea id="jsonPaste" style="display:none;"></textarea>
+          </div>
+        </div>
+
+        <!-- ATTACHMENTS        <!-- ATTACHMENTS / VERSION CONTROL -->
+        <div class="section">
+          <div class="section-header">
+            <div class="section-title">Order forms &amp; attachments</div>
+            <div class="section-meta" id="attachmentsMeta">0 versions</div>
+          </div>
+          <div class="attachments-list" id="attachmentsList"></div>
+          <div class="line-items-actions">
+            <button class="btn btn-sm btn-primary" onclick="openAttachmentModal()">＋ Add version</button>
+            <span style="color:var(--muted); font-size:11.5px; margin-left:auto;">Track every order form revision</span>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="section-header"><div class="section-title">Notes &amp; exceptions</div></div>
+          <div class="section-body">
+            <div class="field-grid">
+              <div class="field full"><label>Notes</label><textarea data-field="notes" oninput="updateField(this)" placeholder="Context, anything ops should know…" rows="4"></textarea></div>
+              <div class="field full">
+                <label>
+                  Non-standard / exception language
+                  <span style="font-size:10px; text-transform:none; color:var(--muted); font-weight:400; letter-spacing:0;">— anything filled here triggers a flag</span>
+                </label>
+                <textarea data-field="exceptions" oninput="updateField(this)" placeholder="Custom MSA carve-outs, exclusivity language, IP transfer terms, anything that deviates from the standard order form…" rows="4"></textarea>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- LINE ITEMS (de-prioritized — collapsed by default) -->
+        <details class="section section-collapsible" id="lineItemsSection">
+          <summary class="section-header" style="cursor:pointer; list-style:none;">
+            <div class="section-title">Line items</div>
+            <div class="section-meta" id="lineCount">0 items</div>
+            <span style="margin-left:auto; color:var(--muted-2); font-size:11.5px;">click to expand</span>
+          </summary>
+          <div style="overflow-x:auto;">
+            <table class="line-items-table" id="lineItemsTable">
+              <thead><tr>
+                <th style="width:32%">Product</th>
+                <th style="width:10%">Qty</th>
+                <th style="width:16%">Unit price</th>
+                <th style="width:12%">Term (mo)</th>
+                <th style="width:10%">Type</th>
+                <th style="width:18%">Line total</th>
+                <th style="width:32px"></th>
+              </tr></thead>
+              <tbody id="lineItemsBody"></tbody>
+              <tfoot><tr>
+                <td colspan="5" style="text-align:right; color:var(--muted);">Total</td>
+                <td class="amount" id="lineItemsTotal">$0.00</td>
+                <td></td>
+              </tr></tfoot>
+            </table>
+          </div>
+          <div class="line-items-actions">
+            <button class="btn btn-sm" onclick="addLineItem()">＋ Add line</button>
+            <button class="btn btn-sm btn-ghost" onclick="checkDuplicateLines(true)">Check for duplicates</button>
+            <span style="color:var(--muted); font-size:11.5px; margin-left:auto;" id="rebatesSummary"></span>
+          </div>
+        </details>
+      </div>
+
+      <div style="display:flex; flex-direction:column; gap:20px;">
+        <!-- BILLING -->
+        <div class="section">
+          <div class="section-header"><div class="section-title">Billing schedule</div></div>
+          <div class="section-body">
+            <div class="field-grid">
+              <div class="field full">
+                <label class="checkbox-field">
+                  <input type="checkbox" data-field="customBilling" onchange="updateField(this)" />
+                  Custom billing schedule (deviates from standard)
+                </label>
+              </div>
+              <div class="field full" id="customBillingDetailsField">
+                <label>Custom schedule details <span style="color:var(--muted-2); font-weight:400;">· from SFDC <code style="font-size:11px;">Custom_Billing_Schedule_Details__c</code></span></label>
+                <textarea data-field="customBillingDetails" oninput="updateField(this)" placeholder="e.g. 50% upfront on signature, 25% on go-live, 25% at month 6" rows="3"></textarea>
+              </div>
+              <div class="field"><label>First invoice</label><input type="date" data-field="firstInvoiceDate" oninput="updateField(this)" /></div>
+              <div class="field"><label>Frequency</label>
+                <select data-field="billingFrequency" onchange="updateField(this)">
+                  <option value="">—</option>
+                  <option value="monthly">Monthly</option>
+                  <option value="quarterly">Quarterly</option>
+                  <option value="semi-annual">Semi-annual</option>
+                  <option value="annual">Annual</option>
+                  <option value="upfront">Upfront / one-time</option>
+                  <option value="custom">Custom</option>
+                </select>
+              </div>
+              <div class="field"><label>Invoice amount</label><input type="number" data-field="invoiceAmount" oninput="updateField(this)" placeholder="0.00" step="0.01" /></div>
+              <div class="field"><label># of invoices</label><input type="number" data-field="numInvoices" oninput="updateField(this)" placeholder="0" /></div>
+              <div class="field"><label>Payment terms</label>
+                <select data-field="paymentTerms" onchange="updateField(this)">
+                  <option value="">—</option>
+                  <option value="due-on-receipt">Due on receipt</option>
+                  <option value="net-15">Net 15</option>
+                  <option value="net-30">Net 30</option>
+                  <option value="net-45">Net 45</option>
+                  <option value="net-60">Net 60</option>
+                  <option value="net-90">Net 90</option>
+                  <option value="custom">Custom</option>
+                </select>
+              </div>
+              <div class="field"><label>Payment type</label>
+                <select data-field="paymentType" onchange="updateField(this)">
+                  <option value="">—</option>
+                  <option value="ach">ACH</option>
+                  <option value="credit-card">Credit card</option>
+                  <option value="wire">Wire transfer</option>
+                  <option value="check">Check</option>
+                  <option value="custom">Other / custom</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- DEAL VALUE (replaces Rev Rec — kept ARR/TCV which sales ops needs) -->
+        <div class="section">
+          <div class="section-header"><div class="section-title">Deal value</div></div>
+          <div class="section-body">
+            <div class="field-grid">
+              <div class="field"><label>ACV / ARR</label><input type="number" data-field="arr" oninput="updateField(this)" placeholder="0.00" step="0.01" /></div>
+              <div class="field"><label>TCV</label><input type="number" data-field="tcv" oninput="updateField(this)" placeholder="0.00" step="0.01" /></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="section-header"><div class="section-title">Activity</div></div>
+          <div class="section-body" id="activityBody" style="max-height:280px; overflow-y:auto; padding-top:4px;">
+            <div style="color:var(--muted); font-size:12px; padding:8px 0;">No activity yet.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast-wrap" id="toastWrap"></div>
+</div>
+
+<!-- Push to SFDC -->
+<div class="modal-overlay" id="pushModal" style="display:none;">
+  <div class="modal" style="width:580px;">
+    <h2 class="display">Push to Salesforce</h2>
+    <p>Copy this note and use it as a reference when updating Salesforce.</p>
+    <div class="push-content" id="pushContent">—</div>
+    <div style="display:flex; gap:8px; justify-content:flex-end;">
+      <button class="btn" onclick="document.getElementById('pushModal').style.display='none'">Cancel</button>
+      <button class="btn btn-primary" onclick="copyPushContent()">Copy note</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add attachment -->
+<div class="modal-overlay" id="attachmentModal" style="display:none;">
+  <div class="modal" style="width:520px;">
+    <h2 class="display">Add order form version</h2>
+    <p>Track a new revision of the order form. The file lives in your storage system; this records the metadata.</p>
+
+    <label>Filename</label>
+    <input type="text" id="attFilename" placeholder="Primo_Brands_OrderForm_v3.pdf" />
+
+    <label>Version label</label>
+    <input type="text" id="attVersion" placeholder="v3" />
+
+    <label>Storage location</label>
+    <select id="attStorage">
+      <option value="google-drive">Google Drive</option>
+      <option value="sharepoint">SharePoint</option>
+      <option value="dropbox">Dropbox</option>
+      <option value="email">Email attachment (no link)</option>
+      <option value="other">Other / no link</option>
+    </select>
+
+    <label>Link to file (optional)</label>
+    <input type="url" id="attLink" placeholder="https://drive.google.com/..." />
+
+    <label>What changed in this version?</label>
+    <textarea id="attNotes" placeholder="e.g. AE updated payment terms to Net 60, added installation rebate"></textarea>
+
+    <label class="checkbox-field" style="margin-bottom:16px;">
+      <input type="checkbox" id="attMakeCurrent" checked />
+      Mark as current version
+    </label>
+
+    <div style="display:flex; gap:8px; justify-content:flex-end;">
+      <button class="btn" onclick="closeAttachmentModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveAttachment()">Add version</button>
+    </div>
+  </div>
+</div>
+
+<!-- Settings: flag thresholds -->
+<div class="modal-overlay" id="settingsModal" style="display:none;">
+  <div class="modal" style="width:560px;">
+    <h2 class="display">Flag rules</h2>
+    <p>Thresholds that trigger flags across all deals.</p>
+
+    <label>Rebate threshold (% of TCV)</label>
+    <input type="number" id="setRebatePct" min="0" max="100" step="1" />
+
+    <label>Standard term lengths (comma-separated months)</label>
+    <input type="text" id="setStandardTerms" placeholder="12, 24, 36" />
+
+    <label>Max payment terms (Net X days)</label>
+    <input type="number" id="setMaxNet" min="0" max="365" step="1" />
+
+    <label>Standard payment types (comma-separated)</label>
+    <input type="text" id="setStandardPayments" placeholder="ach, credit-card" />
+
+    <hr style="border:none; border-top:1px solid var(--line); margin:16px 0;" />
+    <h3 style="font-size:13px; font-weight:600; margin-bottom:4px;">Google Sheets shared storage</h3>
+    <p style="font-size:12px; color:var(--muted); margin-bottom:10px;">Paste the Apps Script web app URL below to sync deals across your team. Everyone uses the same URL — no account or token needed. See the setup guide for how to get this URL.</p>
+    <label>Apps Script Web App URL</label>
+    <input type="text" id="setSheetsUrl" placeholder="https://script.google.com/macros/s/.../exec" autocomplete="off" style="font-family:'JetBrains Mono',monospace; font-size:11px;" />
+    <div id="sheetsTestResult" style="display:none; font-size:12px; margin-top:-6px; margin-bottom:8px; padding:6px 10px; border-radius:4px;"></div>
+    <button class="btn btn-sm" onclick="testSheetsConnection()" style="margin-bottom:12px;">Test connection</button>
+
+    <hr style="border:none; border-top:1px solid var(--line); margin:16px 0;" />
+    <p style="font-size:12px; color:var(--muted); margin-bottom:10px;">Paste your Anthropic API key to enable one-click Salesforce sync from any browser. Stored locally in this browser only, never sent anywhere except api.anthropic.com.</p>
+    <label>Anthropic API key</label>
+    <input type="password" id="setApiKey" placeholder="sk-ant-..." autocomplete="off" />
+
+    <div style="display:flex; gap:8px; justify-content:flex-end; margin-top:8px;">
+      <button class="btn" onclick="closeSettings()">Close</button>
+      <button class="btn" onclick="resetSettings()">Reset to defaults</button>
+      <button class="btn btn-primary" onclick="saveSettings()">Save</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ============ CONFIG ============
+  const STAGES = [
+    { id: 'discovery', label: 'Discovery' },
+    { id: 'proposal', label: 'Proposal' },
+    { id: 'negotiation', label: 'Negotiation' },
+    { id: 'decision', label: 'Decision' },
+    { id: 'closed-won', label: 'Closed Won' },
+    { id: 'closed-lost', label: 'Closed Lost' },
+  ];
+  const STATUSES = [
+    { id: 'not-started', label: 'Not started' },
+    { id: 'in-progress', label: 'In progress' },
+    { id: 'needs-review', label: 'Needs review' },
+    { id: 'complete', label: 'Complete' },
+    { id: 'blocked', label: 'Blocked' },
+  ];
+  const SFDC_STAGE_MAP = {
+    'discovery': 'discovery', 'qualification': 'discovery', 'prospecting': 'discovery',
+    'proposal': 'proposal', 'proposal/price quote': 'proposal',
+    'negotiation': 'negotiation', 'negotiation/review': 'negotiation',
+    'decision': 'decision',
+    'closed won': 'closed-won', 'closed-won': 'closed-won',
+    'closed lost': 'closed-lost', 'closed-lost': 'closed-lost',
+  };
+  const PAYMENT_TERMS_DAYS = {
+    'due-on-receipt': 0, 'net-15': 15, 'net-30': 30, 'net-45': 45, 'net-60': 60, 'net-90': 90, 'custom': 999
+  };
+  const DEFAULT_THRESHOLDS = {
+    rebatePct: 15,           // rebates totaling > 15% of TCV
+    standardTerms: [12, 24, 36],
+    maxNetDays: 30,
+    standardPayments: ['ach', 'credit-card'],
+  };
+
+  // ============ STATE ============
+  let currentUser = null;
+  let deals = [];
+  let currentDeal = null;
+  let sortField = 'closeDate';
+  let sortAsc = true;
+  let stageFilter = 'all';
+  let saveTimer = null;
+  let activeNotices = [];
+  let thresholds = { ...DEFAULT_THRESHOLDS };
+
+  // ============ GOOGLE SHEETS STORAGE ============
+  // Deals are stored via a Google Apps Script web app that reads/writes a shared Sheet.
+  // No auth required for users — configure once by pasting the Apps Script URL in Settings.
+  // Falls back to localStorage if not configured (data stays in browser only).
+
+  const HAS_WINDOW_STORAGE = false; // disabled — using Sheets storage
+
+  function sheetsUrl() {
+    try { return localStorage.getItem('di_sheets_url') || null; }
+    catch (_) { return null; }
+  }
+
+  const Sheets = {
+    async list(prefix) {
+      const url = sheetsUrl();
+      if (!url) return lsListFallback(prefix);
+      try {
+        const resp = await fetch(url + '?action=list&prefix=' + encodeURIComponent(prefix), { cache: 'no-store' });
+        if (!resp.ok) throw new Error('Sheets list failed: ' + resp.status);
+        const data = await resp.json();
+        return { keys: data.keys || [] };
+      } catch (e) { console.error('[Sheets.list]', e); return lsListFallback(prefix); }
+    },
+
+    async get(key) {
+      const url = sheetsUrl();
+      if (!url) return lsGetFallback(key);
+      try {
+        const resp = await fetch(url + '?action=get&key=' + encodeURIComponent(key), { cache: 'no-store' });
+        if (!resp.ok) throw new Error('Sheets get failed: ' + resp.status);
+        const data = await resp.json();
+        if (data.value === undefined || data.value === null) return null;
+        return { key, value: data.value };
+      } catch (e) { console.error('[Sheets.get]', e); return lsGetFallback(key); }
+    },
+
+    async set(key, value) {
+      const url = sheetsUrl();
+      if (!url) return lsSetFallback(key, value);
+      try {
+        const resp = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain' },
+          body: JSON.stringify({ action: 'set', key, value }),
+        });
+        if (!resp.ok) throw new Error('Sheets set failed: ' + resp.status);
+        return { key, value };
+      } catch (e) {
+        // Try GET-based fallback (some CORS configs block POST)
+        try {
+          const resp2 = await fetch(url + '?action=set&key=' + encodeURIComponent(key) + '&value=' + encodeURIComponent(value));
+          if (!resp2.ok) throw new Error('Sheets set (GET fallback) failed: ' + resp2.status);
+          return { key, value };
+        } catch (e2) { throw e2; }
+      }
+    },
+
+    async delete(key) {
+      const url = sheetsUrl();
+      if (!url) return lsDeleteFallback(key);
+      try {
+        const resp = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain' },
+          body: JSON.stringify({ action: 'delete', key }),
+        });
+        if (!resp.ok) throw new Error('Sheets delete failed: ' + resp.status);
+        return { key, deleted: true };
+      } catch (e) {
+        try {
+          const resp2 = await fetch(url + '?action=delete&key=' + encodeURIComponent(key));
+          if (!resp2.ok) throw new Error('Sheets delete (GET fallback) failed: ' + resp2.status);
+          return { key, deleted: true };
+        } catch (e2) { console.error('[Sheets.delete]', e2); return null; }
+      }
+    },
+  };
+
+  // localStorage fallbacks (used when Sheets URL not configured)
+  function lsListFallback(prefix) {
+    const keys = [];
+    try {
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (k && k.startsWith('di_kv:' + (prefix || ''))) keys.push(k.slice('di_kv:'.length));
+      }
+    } catch (_) {}
+    return { keys };
+  }
+  function lsGetFallback(key) {
+    try {
+      const v = localStorage.getItem('di_kv:' + key);
+      return v == null ? null : { key, value: v };
+    } catch (_) { return null; }
+  }
+  function lsSetFallback(key, value) {
+    try { localStorage.setItem('di_kv:' + key, value); return { key, value }; }
+    catch (err) { throw err; }
+  }
+  function lsDeleteFallback(key) {
+    try { localStorage.removeItem('di_kv:' + key); return { key, deleted: true }; }
+    catch (_) { return null; }
+  }
+
+  const Storage = {
+    async list(prefix) { return Sheets.list(prefix); },
+    async get(key) { return Sheets.get(key); },
+    async set(key, value) { return Sheets.set(key, value); },
+    async delete(key) { return Sheets.delete(key); },
+  };
+
+  // ============ CLIPBOARD SHIM ============
+  // navigator.clipboard.writeText fails on insecure contexts (file://) and inside some sandboxed iframes.
+  // Falls back to a hidden textarea + document.execCommand('copy').
+  async function copyText(text) {
+    // Try modern API first
+    if (navigator.clipboard && window.isSecureContext) {
+      try { await navigator.clipboard.writeText(text); return true; }
+      catch (_) { /* fall through */ }
+    }
+    // Legacy fallback
+    try {
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.setAttribute('readonly', '');
+      ta.style.position = 'fixed';
+      ta.style.top = '-1000px';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.focus();
+      ta.select();
+      const ok = document.execCommand('copy');
+      document.body.removeChild(ta);
+      return ok;
+    } catch (_) { return false; }
+  }
+
+  // ============ STORAGE ============
+  async function loadDeals() {
+    try {
+      const result = await Storage.list('deal:', true);
+      const keys = result?.keys || [];
+      const loaded = [];
+      for (const key of keys) {
+        try {
+          const r = await Storage.get(key, true);
+          if (r?.value) loaded.push(JSON.parse(r.value));
+        } catch (_) {}
+      }
+      deals = loaded;
+    } catch (err) { deals = []; }
+  }
+
+  async function saveDeal(deal) {
+    try {
+      await Storage.set(`deal:${deal.id}`, JSON.stringify(deal), true);
+      return true;
+    } catch (err) {
+      toast('Save failed — try again', 'error');
+      return false;
+    }
+  }
+
+  async function deleteDealStorage(id) {
+    try {
+      const result = await Storage.delete(`deal:${id}`, true);
+      // Some Storage implementations return null on failure rather than throwing.
+      if (result === null) {
+        console.warn('[delete] Storage.delete returned null for deal:' + id);
+        return false;
+      }
+      return true;
+    }
+    catch (err) {
+      console.error('[delete] Storage.delete threw for deal:' + id, err);
+      return false;
+    }
+  }
+
+  async function loadThresholds() {
+    try {
+      const r = await Storage.get('settings:thresholds', true);
+      if (r?.value) thresholds = { ...DEFAULT_THRESHOLDS, ...JSON.parse(r.value) };
+    } catch (_) { thresholds = { ...DEFAULT_THRESHOLDS }; }
+  }
+  async function saveThresholds() {
+    try { await Storage.set('settings:thresholds', JSON.stringify(thresholds), true); return true; }
+    catch (_) { return false; }
+  }
+
+  // ============ AUTH (removed) ============
+  // Sign-in flow has been removed. currentUser is initialized at boot from
+  // localStorage if present, otherwise defaults to "Team".
+
+  const _memStore = {};
+  function localStorage_safe(key, value) {
+    try {
+      if (value === null) { localStorage.removeItem(key); delete _memStore[key]; }
+      else if (value === undefined) return localStorage.getItem(key) ?? _memStore[key] ?? null;
+      else { localStorage.setItem(key, value); _memStore[key] = value; }
+    } catch (_) {
+      if (value === null) delete _memStore[key];
+      else if (value === undefined) return _memStore[key] ?? null;
+      else _memStore[key] = value;
+    }
+    return null;
+  }
+
+  function toggleInstructions(show) {
+    if (show) {
+      // Bring back the quick start card if it was dismissed
+      showQuickstart();
+      addNotice({
+        id: 'how-it-works', type: 'blue',
+        title: 'How this works',
+        body: 'Open this tool inside Claude (claude.ai → GTMS Deal Intake project) so deals sync with the team. &nbsp; 1. Click <strong>+ New intake</strong> to start a deal &nbsp; 2. Paste the SFDC Opp ID and click <strong>⚡ Sync from Salesforce</strong> — fields populate automatically &nbsp; 3. Review flags, attach the order form &nbsp; 4. Click <strong>✓ Save &amp; back to deals</strong> when done.',
+      });
+    }
+  }
+
+  // ============ NOTICES ============
+  function addNotice(notice) {
+    if (activeNotices.find(n => n.id === notice.id)) {
+      activeNotices = activeNotices.map(n => n.id === notice.id ? notice : n);
+    } else { activeNotices.push(notice); }
+    renderNotices();
+  }
+  function dismissNotice(id) {
+    activeNotices = activeNotices.filter(n => n.id !== id);
+    renderNotices();
+  }
+  function clearNotices() { activeNotices = []; renderNotices(); }
+  function renderNotices() {
+    const wrap = document.getElementById('noticesStrip');
+    if (activeNotices.length === 0) { wrap.innerHTML = ''; return; }
+    wrap.innerHTML = activeNotices.map(n => {
+      const iconChar = n.type === 'amber' ? '!' : n.type === 'red' ? '×' : 'i';
+      return `<div class="notice notice-${n.type}">
+        <div class="notice-icon">${iconChar}</div>
+        <div class="notice-body">
+          <strong>${esc(n.title)}</strong>
+          <span>${n.body}</span>
+        </div>
+        <button class="notice-close" onclick="dismissNotice('${n.id}')">×</button>
+      </div>`;
+    }).join('');
+  }
+
+  // ============ INIT ============
+  async function init() {
+    await loadThresholds();
+    await loadDeals();
+    renderStageFilters();
+    renderStats();
+    renderTable();
+    showBoard();
+    // Hide quickstart if previously dismissed
+    if (localStorage_safe('di_qs_dismissed') === 'true') {
+      const qs = document.getElementById('quickstart');
+      if (qs) qs.style.display = 'none';
+    }
+    // If storage is in fallback mode (artifact opened outside Claude.ai sandbox),
+    // tell the user explicitly so they don't expect data to sync across teammates.
+    // We use blue (info), not amber (warning), because saving DOES work — it's just per-browser.
+    // If Sheets not configured, show setup notice
+    if (!sheetsUrl()) {
+      addNotice({
+        id: 'storage-fallback', type: 'amber',
+        title: 'Set up Google Sheets storage to share deals with your team',
+        body: 'Deals are currently saving to <strong>this browser only</strong>. Click the <strong>⚙ Settings</strong> icon (top right) and paste your Apps Script URL to enable shared team storage. See the setup guide for instructions.',
+      });
+    }
+  }
+
+  function dismissQuickstart() {
+    const qs = document.getElementById('quickstart');
+    if (qs) qs.style.display = 'none';
+    localStorage_safe('di_qs_dismissed', 'true');
+    toast('Quick start hidden — open via "How this works" anytime', 'info');
+  }
+  function showQuickstart() {
+    const qs = document.getElementById('quickstart');
+    if (qs) qs.style.display = 'grid';
+    localStorage_safe('di_qs_dismissed', null);
+  }
+
+  function showBoard() {
+    document.getElementById('boardView').classList.remove('hidden');
+    document.getElementById('detailView').classList.remove('active');
+    currentDeal = null;
+    clearNotices();
+    renderStats();
+    renderTable();
+  }
+
+  // ============ DEAL OBJECT ============
+  function newDealObject() {
+    const id = 'd_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+    return {
+      id, dealName: '', account: '', oppId: '',
+      stage: 'discovery', status: 'not-started',
+      owner: currentUser || '', closeDate: '', termMonths: '',
+      customBilling: false, customBillingDetails: '',
+      firstInvoiceDate: '', billingFrequency: '', invoiceAmount: '',
+      numInvoices: '', paymentTerms: '', paymentType: '',
+      arr: '', tcv: '',
+      lineItems: [], notes: '', exceptions: '',
+      customOrderStatus: '', customOrderFormType: [],
+      version: 1, linkedDeals: [],
+      attachments: [], // { id, filename, version, storage, link, notes, isCurrent, addedBy, addedAt }
+      flagOverrides: {}, // flagId -> { resolved: true, resolvedBy, resolvedAt, note }
+      createdAt: new Date().toISOString(), createdBy: currentUser,
+      updatedAt: new Date().toISOString(), updatedBy: currentUser,
+      activity: [{ action: 'Created intake', actor: currentUser, at: new Date().toISOString() }],
+    };
+  }
+
+  async function newDeal() {
+    const deal = newDealObject();
+    deals.push(deal);
+    await saveDeal(deal);
+    openDeal(deal.id);
+  }
+
+  function openDeal(id) {
+    const deal = deals.find(d => d.id === id);
+    if (!deal) return;
+    currentDeal = deal;
+    document.getElementById('boardView').classList.add('hidden');
+    document.getElementById('detailView').classList.add('active');
+    clearNotices();
+    renderDetail();
+    setTimeout(() => checkDuplicateLines(false), 100);
+    setTimeout(() => checkOppIdDuplicate(), 110);
+  }
+
+  async function deleteDealById(id) {
+    const d = deals.find(x => x.id === id);
+    if (!d) {
+      console.warn('[delete] No deal found for id:', id);
+      return;
+    }
+    const label = d.dealName || d.oppId || 'Untitled deal';
+    if (!confirm(`Delete "${label}"? This can't be undone.`)) return;
+    const storageOk = await deleteDealStorage(id);
+    deals = deals.filter(x => x.id !== id);
+    // Clean up linkedDeals references on remaining deals
+    deals.forEach(x => {
+      if (Array.isArray(x.linkedDeals) && x.linkedDeals.includes(id)) {
+        x.linkedDeals = x.linkedDeals.filter(lid => lid !== id);
+        saveDeal(x);
+      }
+    });
+    if (storageOk) {
+      toast('Deal deleted', 'success');
+    } else {
+      toast('Removed from view, but storage delete may have failed — refresh to verify', 'error');
+    }
+    if (currentDeal && currentDeal.id === id) {
+      showBoard();
+    } else {
+      renderTable();
+    }
+  }
+
+  async function deleteDeal() {
+    if (!currentDeal) return;
+    await deleteDealById(currentDeal.id);
+  }
+
+  // ============ DUPLICATE OPP ID DETECTION ============
+  // Normalize an Opp ID input — accept full URLs, 15-char or 18-char IDs.
+  // Returns the canonical 15/18-char ID, or null if unrecognizable.
+  function canonicalOppId(input) {
+    if (!input) return null;
+    const s = String(input).trim();
+    // Try to extract a 15- or 18-char ID from a URL or raw paste
+    const m = s.match(/006[a-zA-Z0-9]{12}([a-zA-Z0-9]{3})?/);
+    return m ? m[0] : null;
+  }
+
+  // Returns array of OTHER deals (not this one) sharing the same canonical Opp ID.
+  function findDealsWithSameOppId(oppId, excludeId) {
+    const canon = canonicalOppId(oppId);
+    if (!canon) return [];
+    return deals.filter(d => d.id !== excludeId && canonicalOppId(d.oppId) === canon);
+  }
+
+  // Called from the oppId input on the detail page (debounced via input handler).
+  function checkOppIdDuplicate() {
+    if (!currentDeal) return;
+    const dupes = findDealsWithSameOppId(currentDeal.oppId, currentDeal.id);
+    if (!dupes.length) {
+      dismissNotice('duplicate-opp-id');
+      return;
+    }
+    // Sort by version desc so "v2" we propose is latest+1
+    const sorted = [...dupes].sort((a, b) => (b.version || 1) - (a.version || 1));
+    const latest = sorted[0];
+    const latestV = latest.version || 1;
+    const proposedV = latestV + 1;
+    const links = sorted.map(d =>
+      `<a href="#" onclick="event.preventDefault(); openDeal('${d.id}')" style="color:var(--blue); text-decoration:underline;">${esc(d.dealName || 'Untitled')} (v${d.version || 1})</a>`
+    ).join(', ');
+    addNotice({
+      id: 'duplicate-opp-id',
+      type: 'amber',
+      title: `This Opp ID already has an intake`,
+      body: `Existing intake${dupes.length > 1 ? 's' : ''}: ${links}.
+        <div style="margin-top:8px; display:flex; gap:8px; flex-wrap:wrap;">
+          <button class="btn btn-sm" onclick="openDeal('${latest.id}')">Open existing</button>
+          <button class="btn btn-sm btn-primary" onclick="markAsVersion(${proposedV}, '${latest.id}')">Mark this as v${proposedV} &amp; link</button>
+        </div>`,
+    });
+  }
+
+  // Promote currentDeal to v{n} and cross-link with the existing deal(s) sharing the Opp ID.
+  async function markAsVersion(versionNum, primaryExistingId) {
+    if (!currentDeal) return;
+    const dupes = findDealsWithSameOppId(currentDeal.oppId, currentDeal.id);
+    if (!dupes.length) {
+      toast('No matching existing intake to link', 'error');
+      dismissNotice('duplicate-opp-id');
+      return;
+    }
+    currentDeal.version = versionNum;
+    // Append (vN) to the deal name if not already there
+    const baseName = (currentDeal.dealName || dupes[0].dealName || 'Untitled').replace(/\s*\(v\d+\)\s*$/, '');
+    currentDeal.dealName = `${baseName} (v${versionNum})`;
+    // Cross-link: every dupe + this deal points to all the others
+    const allIds = [currentDeal.id, ...dupes.map(d => d.id)];
+    const linkSet = new Set([...(currentDeal.linkedDeals || []), ...dupes.map(d => d.id)]);
+    currentDeal.linkedDeals = [...linkSet];
+    // Add activity entry
+    if (!currentDeal.activity) currentDeal.activity = [];
+    currentDeal.activity.push({
+      action: `Marked as v${versionNum}, linked to ${dupes.map(d => d.dealName || d.id).join(', ')}`,
+      actor: currentUser, at: new Date().toISOString(),
+    });
+    currentDeal.updatedAt = new Date().toISOString();
+    currentDeal.updatedBy = currentUser;
+    await saveDeal(currentDeal);
+    // Update the linked deals to point back at this one (and at each other)
+    for (const dup of dupes) {
+      const others = allIds.filter(id => id !== dup.id);
+      const set = new Set([...(dup.linkedDeals || []), ...others]);
+      dup.linkedDeals = [...set];
+      if (!dup.activity) dup.activity = [];
+      dup.activity.push({
+        action: `Linked to v${versionNum}: ${currentDeal.dealName}`,
+        actor: currentUser, at: new Date().toISOString(),
+      });
+      dup.updatedAt = new Date().toISOString();
+      await saveDeal(dup);
+    }
+    dismissNotice('duplicate-opp-id');
+    toast(`Linked as v${versionNum}`, 'success');
+    renderDetail();
+  }
+
+  // ============ FIELD UPDATE ============
+  function updateField(el) {
+    if (!currentDeal) return;
+    const field = el.dataset.field;
+    const newVal = el.type === 'checkbox' ? el.checked : el.value;
+    const oldVal = currentDeal[field];
+    if (oldVal === newVal) return;
+    currentDeal[field] = newVal;
+    currentDeal.updatedAt = new Date().toISOString();
+    currentDeal.updatedBy = currentUser;
+    if (!currentDeal.activity) currentDeal.activity = [];
+    debouncedLogActivity(field);
+    debouncedSave();
+    if (field === 'dealName') {
+      document.getElementById('detailTitle').textContent = newVal || 'Untitled deal';
+      document.getElementById('breadcrumbName').textContent = newVal || 'Untitled';
+    }
+    updateLastEditMeta();
+    // Re-evaluate flags on field change
+    renderFlags();
+    applyFlagStyling();
+  }
+
+  let activityTimer = null;
+  let pendingActivity = {};
+  function debouncedLogActivity(field) {
+    pendingActivity[field] = true;
+    clearTimeout(activityTimer);
+    activityTimer = setTimeout(() => {
+      if (!currentDeal) return;
+      for (const f in pendingActivity) {
+        currentDeal.activity.push({
+          action: `Updated ${humanize(f)}`,
+          actor: currentUser, at: new Date().toISOString()
+        });
+      }
+      if (currentDeal.activity.length > 80) currentDeal.activity = currentDeal.activity.slice(-80);
+      pendingActivity = {};
+      renderActivity();
+    }, 1500);
+  }
+
+  function debouncedSave() {
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(async () => {
+      if (!currentDeal) return;
+      const ok = await saveDeal(currentDeal);
+      if (ok) updateLastEditMeta(true);
+    }, 600);
+  }
+
+  // Flush any pending debounced save, persist immediately, then navigate to the board.
+  // This is the obvious "I'm done with this deal" exit — used by the header button
+  // and by the post-apply-JSON CTA in the Salesforce sync notice.
+  async function saveAndReturn() {
+    if (!currentDeal) { showBoard(); return; }
+    clearTimeout(saveTimer);
+    const ok = await saveDeal(currentDeal);
+    if (ok) {
+      updateLastEditMeta(true);
+      toast('Saved — back to all deals', 'success');
+    } else {
+      toast('Saved locally — back to all deals', 'success');
+    }
+    showBoard();
+  }
+
+  function updateLastEditMeta(justSaved) {
+    if (!currentDeal) return;
+    const el = document.getElementById('lastEditMeta');
+    const when = currentDeal.updatedAt ? formatRelative(currentDeal.updatedAt) : '';
+    const by = currentDeal.updatedBy || '—';
+    el.textContent = `Last edited ${when} by ${by}${justSaved ? ' · saved' : ''}`;
+  }
+
+  // ============ LINE ITEMS ============
+  function addLineItem() {
+    if (!currentDeal) return;
+    if (!currentDeal.lineItems) currentDeal.lineItems = [];
+    currentDeal.lineItems.push({
+      id: 'li_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 4),
+      product: '', qty: 1, unitPrice: 0, termMonths: 12, type: 'standard',
+    });
+    renderLineItems();
+    renderFlags();
+    debouncedSave();
+  }
+
+  function updateLineItem(id, field, value) {
+    if (!currentDeal) return;
+    const item = currentDeal.lineItems.find(li => li.id === id);
+    if (!item) return;
+    if (field === 'qty' || field === 'unitPrice' || field === 'termMonths') {
+      item[field] = parseFloat(value) || 0;
+    } else { item[field] = value; }
+    currentDeal.updatedAt = new Date().toISOString();
+    currentDeal.updatedBy = currentUser;
+    renderLineItemTotals();
+    renderFlags();
+    debouncedSave();
+  }
+
+  function deleteLineItem(id) {
+    if (!currentDeal) return;
+    currentDeal.lineItems = currentDeal.lineItems.filter(li => li.id !== id);
+    renderLineItems();
+    renderFlags();
+    debouncedSave();
+    checkDuplicateLines(false);
+  }
+
+  function lineItemTotal(item) { return (item.qty || 0) * (item.unitPrice || 0); }
+  function totalLineItems() {
+    if (!currentDeal?.lineItems) return 0;
+    return currentDeal.lineItems.reduce((sum, li) => sum + lineItemTotal(li), 0);
+  }
+  function totalRebates() {
+    if (!currentDeal?.lineItems) return 0;
+    return currentDeal.lineItems
+      .filter(li => li.type === 'rebate' || lineItemTotal(li) < 0)
+      .reduce((sum, li) => sum + Math.abs(lineItemTotal(li)), 0);
+  }
+
+  function checkDuplicateLines(showToastIfClean) {
+    if (!currentDeal?.lineItems?.length) {
+      dismissNotice('duplicate-lines');
+      if (showToastIfClean) toast('No line items to check', 'success');
+      return;
+    }
+    const counts = {};
+    currentDeal.lineItems.forEach(li => {
+      const key = `${(li.product || '').trim().toLowerCase()}|${li.qty}|${li.unitPrice}`;
+      if ((li.product || '').trim()) counts[key] = (counts[key] || 0) + 1;
+    });
+    const dupes = Object.entries(counts).filter(([_, c]) => c > 1);
+    if (dupes.length === 0) {
+      dismissNotice('duplicate-lines');
+      if (showToastIfClean) toast('No duplicates found', 'success');
+      renderLineItems();
+      return;
+    }
+    const dupeNames = dupes.map(([k, c]) => {
+      const product = k.split('|')[0];
+      return `"${product}" (×${c})`;
+    }).join(', ');
+    addNotice({
+      id: 'duplicate-lines', type: 'amber',
+      title: 'Possible duplicate line items',
+      body: `${esc(dupeNames)} appear more than once with the same qty &amp; price. Confirm with the AE before pushing.`
+    });
+    renderLineItems();
+  }
+
+  // ============ FLAG ENGINE ============
+  // Returns array of {id, severity, title, desc, fields[]}
+  function computeFlags(d) {
+    const flags = [];
+    if (!d) return flags;
+
+    // 1. Missing critical fields
+    const critical = [
+      { f: 'dealName', label: 'Deal name' },
+      { f: 'account', label: 'Account' },
+      { f: 'oppId', label: 'Opportunity ID' },
+      { f: 'closeDate', label: 'Close date' },
+      { f: 'tcv', label: 'TCV' },
+      { f: 'billingFrequency', label: 'Billing frequency' },
+    ];
+    const missing = critical.filter(c => !d[c.f] || String(d[c.f]).trim() === '');
+    if (missing.length) {
+      flags.push({
+        id: 'missing-critical', severity: 'critical',
+        title: `${missing.length} missing critical field${missing.length === 1 ? '' : 's'}`,
+        desc: `Required before push: ${missing.map(m => m.label).join(', ')}`,
+        fields: missing.map(m => m.f),
+      });
+    }
+
+    // 2. Custom billing schedule
+    if (d.customBilling) {
+      flags.push({
+        id: 'custom-billing', severity: 'warning',
+        title: 'Custom billing schedule',
+        desc: 'Marked as deviating from standard. Confirm with finance before push.',
+        fields: ['customBilling', 'billingFrequency'],
+      });
+
+      // 2a. High-ACV custom billing → additional approvals required
+      // ACV preferentially read from ARR; if missing, derive from TCV / termMonths (months → years)
+      const arrVal = parseFloat(d.arr) || 0;
+      const tcvVal = parseFloat(d.tcv) || 0;
+      const termM  = parseFloat(d.termMonths) || 0;
+      const derivedAcv = (tcvVal > 0 && termM > 0) ? (tcvVal * 12 / termM) : 0;
+      const acv = arrVal > 0 ? arrVal : derivedAcv;
+      if (acv >= 100000) {
+        flags.push({
+          id: 'high-acv-custom-billing', severity: 'critical',
+          title: `Custom billing on ${formatCurrency(acv)} ACV — additional approvals required`,
+          desc: arrVal > 0
+            ? 'Deals over $100K ACV with a custom billing schedule require additional approvals beyond standard deal desk. Loop in finance leadership early.'
+            : `ACV derived from TCV/term (${formatCurrency(tcvVal)} ÷ ${termM}mo × 12). Custom billing on deals ≥$100K ACV requires additional approvals — loop in finance leadership early.`,
+          fields: ['customBilling', 'arr', 'tcv', 'termMonths'],
+        });
+      }
+    }
+    const numInv = parseFloat(d.numInvoices) || 0;
+    if (numInv > 12) {
+      flags.push({
+        id: 'high-invoice-count', severity: 'warning',
+        title: `Unusually high invoice count (${numInv})`,
+        desc: 'More than 12 invoices is non-standard for most billing setups.',
+        fields: ['numInvoices'],
+      });
+    }
+
+    // 3. Non-standard contract language (exceptions field has content)
+    if (d.exceptions && d.exceptions.trim().length > 0) {
+      flags.push({
+        id: 'non-standard-language', severity: 'critical',
+        title: 'Non-standard contract language present',
+        desc: `Exception text recorded (${d.exceptions.trim().length} chars). Legal review required before close.`,
+        fields: ['exceptions'],
+      });
+    }
+
+    // 4. Rebates / discounts > threshold
+    const tcv = parseFloat(d.tcv) || 0;
+    const rebates = totalRebatesFor(d);
+    if (rebates > 0 && tcv > 0) {
+      const pct = (rebates / (tcv + rebates)) * 100; // rebates as % of gross before rebates
+      if (pct > thresholds.rebatePct) {
+        flags.push({
+          id: 'large-rebates', severity: 'warning',
+          title: `Rebates total ${pct.toFixed(1)}% of gross deal value`,
+          desc: `${formatCurrency(rebates)} in rebates exceeds ${thresholds.rebatePct}% threshold. Confirm pricing approval.`,
+          fields: ['lineItems'],
+        });
+      }
+    }
+
+    // 5. Multi-year / non-standard term
+    const term = parseFloat(d.termMonths) || 0;
+    if (term && !thresholds.standardTerms.includes(term)) {
+      flags.push({
+        id: 'nonstandard-term', severity: 'warning',
+        title: `Non-standard term length (${term} months)`,
+        desc: `Standard terms: ${thresholds.standardTerms.join(', ')} months. Verify with deal desk.`,
+        fields: ['termMonths'],
+      });
+    }
+
+    // 6. Non-standard payment terms
+    if (d.paymentTerms) {
+      const days = PAYMENT_TERMS_DAYS[d.paymentTerms];
+      if (days !== undefined && days > thresholds.maxNetDays) {
+        flags.push({
+          id: 'long-payment-terms', severity: 'warning',
+          title: `Payment terms exceed Net ${thresholds.maxNetDays}`,
+          desc: `Selected: ${humanize(d.paymentTerms)}. Cash flow impact — flag to finance.`,
+          fields: ['paymentTerms'],
+        });
+      }
+      if (d.paymentTerms === 'custom') {
+        flags.push({
+          id: 'custom-payment-terms', severity: 'warning',
+          title: 'Custom payment terms',
+          desc: 'Marked as custom — document specifics in Notes.',
+          fields: ['paymentTerms'],
+        });
+      }
+    }
+
+    // 7. Non-standard payment type
+    if (d.paymentType && !thresholds.standardPayments.includes(d.paymentType)) {
+      flags.push({
+        id: 'nonstandard-payment-type', severity: 'info',
+        title: `Non-standard payment type (${humanize(d.paymentType)})`,
+        desc: `Standard types: ${thresholds.standardPayments.map(humanize).join(', ')}. Confirm wire/check process if applicable.`,
+        fields: ['paymentType'],
+      });
+    }
+
+    return flags;
+  }
+
+  function totalRebatesFor(d) {
+    if (!d?.lineItems) return 0;
+    return d.lineItems
+      .filter(li => li.type === 'rebate' || lineItemTotal(li) < 0)
+      .reduce((sum, li) => sum + Math.abs(lineItemTotal(li)), 0);
+  }
+
+  function flagCountFor(d) {
+    const flags = computeFlags(d);
+    const overrides = d.flagOverrides || {};
+    return flags.filter(f => !overrides[f.id]?.resolved).length;
+  }
+
+  function renderFlags() {
+    if (!currentDeal) return;
+    const flags = computeFlags(currentDeal);
+    const overrides = currentDeal.flagOverrides || {};
+    const wrap = document.getElementById('flagList');
+    const meta = document.getElementById('flagsMeta');
+
+    if (flags.length === 0) {
+      wrap.innerHTML = `<div class="flags-empty">✓ No flags. This deal looks ready to push.</div>`;
+      meta.textContent = 'all clear';
+      return;
+    }
+
+    const open = flags.filter(f => !overrides[f.id]?.resolved);
+    const resolved = flags.filter(f => overrides[f.id]?.resolved);
+    meta.innerHTML = `${open.length} open · ${resolved.length} resolved`;
+
+    const allFlags = [...open, ...resolved];
+    wrap.innerHTML = allFlags.map(f => {
+      const isResolved = !!overrides[f.id]?.resolved;
+      const sevIcon = f.severity === 'critical' ? '!' : f.severity === 'warning' ? '⚑' : 'i';
+      return `
+        <div class="flag-item severity-${f.severity} ${isResolved ? 'resolved' : ''}">
+          <div class="flag-icon">${sevIcon}</div>
+          <div class="flag-body">
+            <div class="flag-title">${esc(f.title)}</div>
+            <div class="flag-desc">${esc(f.desc)}</div>
+            ${isResolved ? `<div class="flag-meta">Marked OK by ${esc(overrides[f.id].resolvedBy)} ${formatRelative(overrides[f.id].resolvedAt)}${overrides[f.id].note ? ' — ' + esc(overrides[f.id].note) : ''}</div>` : ''}
+          </div>
+          <div class="flag-actions">
+            ${isResolved
+              ? `<button class="btn btn-sm btn-ghost" onclick="reopenFlag('${f.id}')">Reopen</button>`
+              : `<button class="flag-resolve-pill" onclick="resolveFlag('${f.id}')">Mark OK</button>`}
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  function applyFlagStyling() {
+    if (!currentDeal) return;
+    const flags = computeFlags(currentDeal);
+    const overrides = currentDeal.flagOverrides || {};
+    const openFlags = flags.filter(f => !overrides[f.id]?.resolved);
+    const flaggedFields = new Set();
+    openFlags.forEach(f => (f.fields || []).forEach(fld => flaggedFields.add(fld)));
+
+    document.querySelectorAll('[data-field]').forEach(el => {
+      const f = el.dataset.field;
+      const fieldWrap = el.closest('.field');
+      if (!fieldWrap) return;
+      if (flaggedFields.has(f)) fieldWrap.classList.add('flagged');
+      else fieldWrap.classList.remove('flagged');
+    });
+  }
+
+  function resolveFlag(flagId) {
+    if (!currentDeal) return;
+    const note = prompt('Optional: add a note about why this is OK (e.g. "approved by deal desk per email 5/6")', '');
+    if (note === null) return; // cancelled
+    if (!currentDeal.flagOverrides) currentDeal.flagOverrides = {};
+    currentDeal.flagOverrides[flagId] = {
+      resolved: true,
+      resolvedBy: currentUser,
+      resolvedAt: new Date().toISOString(),
+      note: note.trim() || null,
+    };
+    currentDeal.activity.push({
+      action: `Resolved flag: ${flagId}${note ? ' — ' + note.slice(0, 60) : ''}`,
+      actor: currentUser, at: new Date().toISOString()
+    });
+    debouncedSave();
+    renderFlags();
+    applyFlagStyling();
+    renderActivity();
+  }
+
+  function reopenFlag(flagId) {
+    if (!currentDeal?.flagOverrides) return;
+    delete currentDeal.flagOverrides[flagId];
+    currentDeal.activity.push({
+      action: `Reopened flag: ${flagId}`,
+      actor: currentUser, at: new Date().toISOString()
+    });
+    debouncedSave();
+    renderFlags();
+    applyFlagStyling();
+    renderActivity();
+  }
+
+  // ============ ATTACHMENTS ============
+  function openAttachmentModal() {
+    document.getElementById('attFilename').value = '';
+    document.getElementById('attVersion').value = suggestNextVersion();
+    document.getElementById('attStorage').value = 'google-drive';
+    document.getElementById('attLink').value = '';
+    document.getElementById('attNotes').value = '';
+    document.getElementById('attMakeCurrent').checked = true;
+    document.getElementById('attachmentModal').style.display = 'grid';
+    setTimeout(() => document.getElementById('attFilename').focus(), 50);
+  }
+  function closeAttachmentModal() {
+    document.getElementById('attachmentModal').style.display = 'none';
+  }
+  function suggestNextVersion() {
+    if (!currentDeal?.attachments?.length) return 'v1';
+    const versions = currentDeal.attachments.map(a => a.version || '');
+    const nums = versions.map(v => {
+      const m = v.match(/v?(\d+)/i);
+      return m ? parseInt(m[1]) : 0;
+    });
+    const next = Math.max(0, ...nums) + 1;
+    return `v${next}`;
+  }
+  function saveAttachment() {
+    if (!currentDeal) return;
+    const filename = document.getElementById('attFilename').value.trim();
+    const version = document.getElementById('attVersion').value.trim();
+    const storage = document.getElementById('attStorage').value;
+    const link = document.getElementById('attLink').value.trim();
+    const notes = document.getElementById('attNotes').value.trim();
+    const makeCurrent = document.getElementById('attMakeCurrent').checked;
+
+    if (!filename) {
+      toast('Filename required', 'error');
+      return;
+    }
+    if (link && !/^https?:\/\//.test(link)) {
+      toast('Link must start with http:// or https://', 'error');
+      return;
+    }
+
+    if (!currentDeal.attachments) currentDeal.attachments = [];
+    if (makeCurrent) currentDeal.attachments.forEach(a => a.isCurrent = false);
+
+    const att = {
+      id: 'att_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5),
+      filename, version, storage, link, notes,
+      isCurrent: makeCurrent,
+      addedBy: currentUser,
+      addedAt: new Date().toISOString(),
+    };
+    currentDeal.attachments.push(att);
+    currentDeal.activity.push({
+      action: `Added order form ${version} (${filename})`,
+      actor: currentUser, at: new Date().toISOString()
+    });
+    debouncedSave();
+    closeAttachmentModal();
+    renderAttachments();
+    renderActivity();
+    toast(`Added ${version}`, 'success');
+  }
+  function deleteAttachment(id) {
+    if (!currentDeal?.attachments) return;
+    const att = currentDeal.attachments.find(a => a.id === id);
+    if (!att) return;
+    if (!confirm(`Remove "${att.filename}" (${att.version})?`)) return;
+    currentDeal.attachments = currentDeal.attachments.filter(a => a.id !== id);
+    currentDeal.activity.push({
+      action: `Removed order form ${att.version} (${att.filename})`,
+      actor: currentUser, at: new Date().toISOString()
+    });
+    debouncedSave();
+    renderAttachments();
+    renderActivity();
+  }
+  function setCurrentAttachment(id) {
+    if (!currentDeal?.attachments) return;
+    currentDeal.attachments.forEach(a => a.isCurrent = (a.id === id));
+    const att = currentDeal.attachments.find(a => a.id === id);
+    currentDeal.activity.push({
+      action: `Set current version → ${att.version} (${att.filename})`,
+      actor: currentUser, at: new Date().toISOString()
+    });
+    debouncedSave();
+    renderAttachments();
+    renderActivity();
+  }
+
+  function renderAttachments() {
+    if (!currentDeal) return;
+    const atts = (currentDeal.attachments || []).slice().sort((a, b) => {
+      // Current first, then most recent
+      if (a.isCurrent && !b.isCurrent) return -1;
+      if (b.isCurrent && !a.isCurrent) return 1;
+      return new Date(b.addedAt) - new Date(a.addedAt);
+    });
+    const wrap = document.getElementById('attachmentsList');
+    document.getElementById('attachmentsMeta').textContent = `${atts.length} version${atts.length === 1 ? '' : 's'}`;
+    if (atts.length === 0) {
+      wrap.innerHTML = `<div class="flags-empty" style="background:transparent;">No order forms attached yet. Click "Add version" when one comes in.</div>`;
+      return;
+    }
+    wrap.innerHTML = atts.map(a => {
+      const ext = (a.filename.match(/\.([a-z0-9]+)$/i)?.[1] || 'FILE').toUpperCase().slice(0, 4);
+      const linkPart = a.link ? `<a href="${esc(a.link)}" target="_blank" rel="noopener">${esc(a.filename)}</a>` : esc(a.filename);
+      return `
+        <div class="attachment-item">
+          <div class="attachment-icon ${a.isCurrent ? 'is-current' : ''}">${esc(ext)}</div>
+          <div class="attachment-body">
+            <div class="attachment-name">${linkPart}</div>
+            <div class="attachment-meta">
+              <span class="attachment-version-pill ${a.isCurrent ? 'current' : ''}">${esc(a.version || '—')}${a.isCurrent ? ' · current' : ''}</span>
+              <span>${esc(humanize(a.storage || 'other'))}</span>
+              <span>added by ${esc(a.addedBy || '—')}</span>
+              <span>${formatRelative(a.addedAt)}</span>
+            </div>
+            ${a.notes ? `<div class="attachment-notes">${esc(a.notes)}</div>` : ''}
+          </div>
+          <div class="attachment-actions">
+            ${!a.isCurrent ? `<button class="btn btn-sm btn-ghost" onclick="setCurrentAttachment('${a.id}')" title="Mark as current">Set current</button>` : ''}
+            <button class="btn btn-sm btn-ghost delete-row-btn" style="width:auto; padding:4px 8px;" onclick="deleteAttachment('${a.id}')" title="Remove">×</button>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  // ============ BOARD RENDER ============
+  function renderStageFilters() {
+    const wrap = document.getElementById('stageFilters');
+    const all = [
+      { id: 'all', label: 'All' },
+      ...STAGES,
+      { id: '__flagged__', label: '⚑ Flagged' },
+      { id: '__custombilling__', label: '⚙ Custom billing' },
+      { id: '__nonstandard__', label: '✎ Non-standard terms' },
+    ];
+    wrap.innerHTML = all.map(s => {
+      const cls = stageFilter === s.id
+        ? (s.id === '__flagged__' || s.id === '__custombilling__' || s.id === '__nonstandard__' ? 'flagged-active' : 'active')
+        : '';
+      return `<div class="filter-pill ${cls}" onclick="setStageFilter('${s.id}')">${s.label}</div>`;
+    }).join('');
+  }
+  function setStageFilter(id) { stageFilter = id; renderStageFilters(); renderTable(); }
+
+  function refreshOwnerFilter() {
+    const sel = document.getElementById('ownerFilter');
+    if (!sel) return;
+    const current = sel.value;
+    const owners = [...new Set(deals.map(d => (d.owner || '').trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b));
+    sel.innerHTML = `<option value="">All owners</option>` +
+      owners.map(o => `<option value="${esc(o)}">${esc(o)}</option>`).join('');
+    if (owners.includes(current)) sel.value = current;
+  }
+
+  function getFilteredDeals() {
+    const q = (document.getElementById('searchInput')?.value || '').toLowerCase().trim();
+    const ownerSel = (document.getElementById('ownerFilter')?.value || '').trim();
+    return deals.filter(d => {
+      if (stageFilter === '__flagged__') {
+        if (flagCountFor(d) === 0) return false;
+      } else if (stageFilter === '__custombilling__') {
+        if (!d.customBilling) return false;
+      } else if (stageFilter === '__nonstandard__') {
+        if (!d.exceptions || !String(d.exceptions).trim()) return false;
+      } else if (stageFilter !== 'all') {
+        if (d.stage !== stageFilter) return false;
+      }
+      if (ownerSel && (d.owner || '').trim() !== ownerSel) return false;
+      if (q) {
+        const hay = `${d.dealName} ${d.account} ${d.oppId} ${d.owner}`.toLowerCase();
+        if (!hay.includes(q)) return false;
+      }
+      return true;
+    });
+  }
+
+  function renderStats() {
+    const filtered = getFilteredDeals();
+    const totalTcv = filtered.reduce((s, d) => s + (parseFloat(d.tcv) || 0), 0);
+    const totalArr = filtered.reduce((s, d) => s + (parseFloat(d.arr) || 0), 0);
+    const wonCount = filtered.filter(d => d.stage === 'closed-won').length;
+    const inProgress = filtered.filter(d => d.status === 'in-progress' || d.status === 'needs-review').length;
+    const totalFlags = filtered.reduce((s, d) => s + flagCountFor(d), 0);
+    document.getElementById('statsBar').innerHTML = `
+      <div class="stat"><div class="stat-label">Deals</div><div class="stat-value mono">${filtered.length}</div><div class="stat-meta">${wonCount} closed won</div></div>
+      <div class="stat"><div class="stat-label">Total TCV</div><div class="stat-value mono">${formatCurrency(totalTcv, true)}</div><div class="stat-meta">across filtered</div></div>
+      <div class="stat"><div class="stat-label">Total ARR</div><div class="stat-value mono">${formatCurrency(totalArr, true)}</div><div class="stat-meta">recurring</div></div>
+      <div class="stat"><div class="stat-label">Active intakes</div><div class="stat-value mono">${inProgress}</div><div class="stat-meta">in progress / review</div></div>
+      <div class="stat"><div class="stat-label">Open flags</div><div class="stat-value mono" style="color:${totalFlags > 0 ? 'var(--amber)' : 'var(--green)'}">${totalFlags}</div><div class="stat-meta">across deals</div></div>
+    `;
+  }
+
+  function renderTable() {
+    refreshOwnerFilter();
+    const tbody = document.getElementById('tableBody');
+    const filtered = getFilteredDeals();
+    const enriched = filtered.map(d => ({ ...d, flagCount: flagCountFor(d) }));
+    const sorted = [...enriched].sort((a, b) => {
+      let av = a[sortField] ?? '';
+      let bv = b[sortField] ?? '';
+      if (sortField === 'tcv' || sortField === 'arr' || sortField === 'flagCount') {
+        av = parseFloat(av) || 0; bv = parseFloat(bv) || 0;
+      }
+      if (av < bv) return sortAsc ? -1 : 1;
+      if (av > bv) return sortAsc ? 1 : -1;
+      return 0;
+    });
+    document.querySelectorAll('th[data-sort]').forEach(th => {
+      th.classList.remove('sorted', 'sorted-asc');
+      if (th.dataset.sort === sortField) th.classList.add(sortAsc ? 'sorted-asc' : 'sorted');
+    });
+    if (sorted.length === 0) {
+      const isFirstUse = deals.length === 0;
+      tbody.innerHTML = `<tr><td colspan="12"><div class="empty-state">
+        <div class="display" style="font-size: 28px; margin-bottom: 8px;">${isFirstUse ? 'Welcome — start your first intake' : 'No deals match these filters'}</div>
+        <div style="margin-bottom: 18px; max-width: 480px; margin-left: auto; margin-right: auto;">
+          ${isFirstUse
+            ? 'Create a deal, paste the Salesforce Opp ID, and click Sync — fields populate automatically. Auto-flags surface non-standard terms before they reach finance.'
+            : 'Try clearing the search or stage filters above.'}
+        </div>
+        ${isFirstUse
+          ? `<button class="btn btn-cta btn-lg btn-pulse" onclick="newDeal()" style="margin-bottom: 8px;">＋ Create your first intake</button>
+             <div style="font-size: 11.5px; color: var(--muted-2); margin-top: 6px;">or click <strong>Help</strong> in the top right for a walkthrough</div>`
+          : `<button class="btn btn-cta btn-lg" onclick="newDeal()">＋ New intake</button>`}
+      </div></td></tr>`;
+      renderStats();
+      return;
+    }
+    tbody.innerHTML = sorted.map(d => `
+      <tr onclick="openDeal('${d.id}')">
+        <td>
+          <div class="deal-name">${esc(d.dealName) || '<span style="color:var(--muted-2)">Untitled deal</span>'}</div>
+          <div class="deal-account">${esc(d.account) || '—'}</div>
+        </td>
+        <td>${d.oppId ? `<span class="opp-id">${esc(d.oppId)}</span>` : '<span style="color:var(--muted-2)">—</span>'}</td>
+        <td><span class="badge badge-stage-${d.stage}">${stageLabel(d.stage)}</span></td>
+        <td><span class="status-dot status-${d.status}">${statusLabel(d.status)}</span></td>
+        <td>${d.flagCount > 0
+          ? `<span class="flag-count">${d.flagCount}</span>`
+          : `<span class="flag-count zero">clear</span>`}
+          ${(d.attachments?.length || 0) > 0 ? `<span style="font-size:11px; color:var(--muted); margin-left:6px;">📎 ${d.attachments.length}</span>` : ''}
+        </td>
+        <td>${esc(d.owner) || '<span style="color:var(--muted-2)">—</span>'}</td>
+        <td>${d.customBilling
+          ? '<span class="badge" style="background:var(--amber-bg); color:var(--amber);">⚙ Custom</span>'
+          : '<span style="color:var(--muted-2); font-size:12px;">Standard</span>'}</td>
+        <td class="amount">${d.arr ? formatCurrency(parseFloat(d.arr)) : '<span style="color:var(--muted-2)">—</span>'}</td>
+        <td class="amount">${d.tcv ? formatCurrency(parseFloat(d.tcv)) : '<span style="color:var(--muted-2)">—</span>'}</td>
+        <td>${d.closeDate || '<span style="color:var(--muted-2)">—</span>'}</td>
+        <td style="color:var(--muted); font-size:12px;">${formatRelative(d.updatedAt)} · ${esc(d.updatedBy) || '—'}</td>
+        <td style="text-align:center;"><button class="row-delete-btn" title="Delete this intake" onclick="event.stopPropagation(); deleteDealById('${d.id}')">×</button></td>
+      </tr>
+    `).join('');
+    renderStats();
+  }
+
+  document.querySelectorAll('th[data-sort]').forEach(th => {
+    th.addEventListener('click', () => {
+      const field = th.dataset.sort;
+      if (sortField === field) sortAsc = !sortAsc;
+      else { sortField = field; sortAsc = (field === 'closeDate'); }
+      renderTable();
+    });
+  });
+
+  // ============ DETAIL RENDER ============
+  function renderDetail() {
+    if (!currentDeal) return;
+    const d = currentDeal;
+    document.getElementById('detailTitle').textContent = d.dealName || 'Untitled deal';
+    document.getElementById('breadcrumbName').textContent = d.dealName || 'Untitled';
+    document.getElementById('sfdcInput').value = d.oppId || '';
+    document.getElementById('jsonPaste').value = '';
+    const ppEl = document.getElementById('promptPreview');
+    if (ppEl) ppEl.textContent = '—';
+    resetSfdcSteps();
+    document.querySelectorAll('[data-field]').forEach(el => {
+      const f = el.dataset.field;
+      if (el.type === 'checkbox') el.checked = !!d[f];
+      else el.value = d[f] ?? '';
+    });
+    renderLineItems();
+    renderActivity();
+    renderAttachments();
+    renderFlags();
+    renderSfdcMeta();
+    renderLinkedDealsBanner();
+    updateOppLink();
+    applyFlagStyling();
+    updateLastEditMeta();
+  }
+
+  // Build a clickable SFDC link from the current opp ID. We use the standard
+  // /lightning/r/Opportunity/{id}/view path which works on any org once logged in.
+  function updateOppLink() {
+    const link = document.getElementById('oppLinkInline');
+    if (!link) return;
+    const id = (currentDeal?.oppId || document.querySelector('[data-field="oppId"]')?.value || '').trim();
+    // Accept 15- or 18-char IDs starting with 006 (Opportunity prefix), or full URLs the user pasted
+    let href = '';
+    const urlMatch = id.match(/https?:\/\/[^\s]+/);
+    if (urlMatch) {
+      href = urlMatch[0];
+    } else if (/^006[a-zA-Z0-9]{12,15}$/.test(id)) {
+      href = `https://lightning.force.com/lightning/r/Opportunity/${id}/view`;
+    }
+    if (href) {
+      link.href = href;
+      link.style.display = 'inline';
+    } else {
+      link.style.display = 'none';
+    }
+  }
+
+  function renderLinkedDealsBanner() {
+    const el = document.getElementById('linkedDealsBanner');
+    if (!el || !currentDeal) return;
+    const ids = Array.isArray(currentDeal.linkedDeals) ? currentDeal.linkedDeals : [];
+    const linked = ids.map(id => deals.find(d => d.id === id)).filter(Boolean);
+    const v = currentDeal.version || 1;
+    if (!linked.length && v === 1) {
+      el.style.display = 'none';
+      return;
+    }
+    const links = linked
+      .sort((a, b) => (a.version || 1) - (b.version || 1))
+      .map(d => `<a href="#" onclick="event.preventDefault(); openDeal('${d.id}')" style="color:var(--blue); text-decoration:underline; margin-right:6px;">v${d.version || 1}: ${esc(d.dealName || 'Untitled')}</a>`)
+      .join(' · ');
+    const versionLabel = v > 1 ? `<strong>v${v}</strong> of this opportunity` : 'Has linked versions';
+    el.innerHTML = `<span style="display:inline-block; padding:3px 8px; border-radius:4px; background:var(--blue-bg); color:var(--blue);">🔗 ${versionLabel}</span> ${links ? '<span style="color:var(--muted); margin-left:8px;">linked: </span>' + links : ''}`;
+    el.style.display = 'block';
+  }
+
+  function renderSfdcMeta() {
+    if (!currentDeal) return;
+    const statusEl = document.getElementById('sfdcCustomOrderStatus');
+    const typeEl = document.getElementById('sfdcCustomOrderFormType');
+    if (!statusEl || !typeEl) return;
+    const status = (currentDeal.customOrderStatus || '').trim();
+    if (status) {
+      statusEl.textContent = status;
+      statusEl.classList.remove('empty');
+    } else {
+      statusEl.textContent = '— not synced —';
+      statusEl.classList.add('empty');
+    }
+    const types = Array.isArray(currentDeal.customOrderFormType) ? currentDeal.customOrderFormType.filter(Boolean) : [];
+    if (types.length) {
+      typeEl.innerHTML = types.map(t => `<span class="readonly-chip">${esc(t)}</span>`).join('');
+      typeEl.classList.remove('empty');
+    } else {
+      typeEl.textContent = '— not synced —';
+      typeEl.classList.add('empty');
+    }
+  }
+
+  function renderLineItems() {
+    if (!currentDeal) return;
+    const items = currentDeal.lineItems || [];
+    const tbody = document.getElementById('lineItemsBody');
+    document.getElementById('lineCount').textContent = `${items.length} item${items.length === 1 ? '' : 's'}`;
+    const rebates = totalRebatesFor(currentDeal);
+    const rebateSummary = document.getElementById('rebatesSummary');
+    if (rebates > 0) {
+      rebateSummary.textContent = `Rebates: ${formatCurrency(rebates)}`;
+      rebateSummary.style.color = 'var(--amber)';
+    } else {
+      rebateSummary.textContent = '';
+    }
+
+    if (items.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="7" style="color:var(--muted); padding:18px; text-align:center;">No line items yet.</td></tr>`;
+      document.getElementById('lineItemsTotal').textContent = '$0.00';
+      return;
+    }
+    const counts = {};
+    items.forEach(li => {
+      const key = `${(li.product || '').trim().toLowerCase()}|${li.qty}|${li.unitPrice}`;
+      if ((li.product || '').trim()) counts[key] = (counts[key] || 0) + 1;
+    });
+    tbody.innerHTML = items.map(li => {
+      const key = `${(li.product || '').trim().toLowerCase()}|${li.qty}|${li.unitPrice}`;
+      const isDupe = counts[key] > 1 && (li.product || '').trim() !== '';
+      const isRebate = li.type === 'rebate' || lineItemTotal(li) < 0;
+      return `
+      <tr>
+        <td>
+          <input type="text" value="${esc(li.product || '')}" oninput="updateLineItem('${li.id}', 'product', this.value)" placeholder="Product name" />
+          ${isDupe ? '<span class="line-flag">duplicate?</span>' : ''}
+          ${isRebate && li.type !== 'rebate' ? '<span class="line-flag">negative?</span>' : ''}
+        </td>
+        <td><input type="number" class="mono-cell" value="${li.qty || 0}" oninput="updateLineItem('${li.id}', 'qty', this.value)" min="0" step="1" /></td>
+        <td><input type="number" class="mono-cell" value="${li.unitPrice || 0}" oninput="updateLineItem('${li.id}', 'unitPrice', this.value)" step="0.01" /></td>
+        <td><input type="number" class="mono-cell" value="${li.termMonths || 0}" oninput="updateLineItem('${li.id}', 'termMonths', this.value)" min="0" step="1" /></td>
+        <td>
+          <select onchange="updateLineItem('${li.id}', 'type', this.value)">
+            <option value="standard" ${li.type === 'standard' || !li.type ? 'selected' : ''}>Standard</option>
+            <option value="rebate" ${li.type === 'rebate' ? 'selected' : ''}>Rebate</option>
+            <option value="discount" ${li.type === 'discount' ? 'selected' : ''}>Discount</option>
+          </select>
+        </td>
+        <td class="amount" style="text-align:right; padding-right:14px; ${isRebate ? 'color:var(--amber);' : ''}">${formatCurrency(lineItemTotal(li))}</td>
+        <td><button class="delete-row-btn" onclick="deleteLineItem('${li.id}')" title="Delete">×</button></td>
+      </tr>`;
+    }).join('');
+    renderLineItemTotals();
+  }
+
+  function renderLineItemTotals() {
+    document.getElementById('lineItemsTotal').textContent = formatCurrency(totalLineItems());
+    if (!currentDeal?.lineItems) return;
+    const rows = document.querySelectorAll('#lineItemsBody tr');
+    currentDeal.lineItems.forEach((li, i) => {
+      const cell = rows[i]?.querySelectorAll('td')[5];
+      if (cell) cell.textContent = formatCurrency(lineItemTotal(li));
+    });
+  }
+
+  function renderActivity() {
+    if (!currentDeal) return;
+    const acts = (currentDeal.activity || []).slice().reverse();
+    const wrap = document.getElementById('activityBody');
+    if (acts.length === 0) {
+      wrap.innerHTML = `<div style="color:var(--muted); font-size:12px; padding:8px 0;">No activity yet.</div>`;
+      return;
+    }
+    wrap.innerHTML = acts.slice(0, 40).map(a => `
+      <div class="activity-item">
+        <div><span class="activity-actor">${esc(a.actor) || '—'}</span> · ${esc(a.action)}</div>
+        <div class="activity-meta">${formatRelative(a.at)}</div>
+      </div>
+    `).join('');
+  }
+
+  // ============ SFDC SYNC ============
+  function resetSfdcSteps() {
+    // v5: old step elements removed; guard gracefully
+    ['sfdcStep1', 'sfdcStep2', 'sfdcStep3'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.classList.remove('done');
+    });
+    const s2 = document.getElementById('sfdcStep2');
+    const s3 = document.getElementById('sfdcStep3');
+    if (s2) s2.classList.add('step-disabled');
+    if (s3) s3.classList.add('step-disabled');
+    const cp = document.getElementById('copyPromptBtn');
+    const aj = document.getElementById('applyJsonBtn');
+    const cj = document.getElementById('clearJsonBtn');
+    if (cp) cp.disabled = true;
+    if (aj) aj.disabled = true;
+    if (cj) cj.disabled = true;
+    const ss = document.getElementById('sfdcSyncStatus');
+    if (ss) { ss.style.display = 'none'; ss.textContent = ''; }
+    const sb = document.getElementById('sfdcSyncBtn');
+    if (sb) { sb.textContent = '⚡ Sync from Salesforce'; sb.disabled = false; }
+  }
+
+  function clearJsonPaste() {
+    document.getElementById('jsonPaste').value = '';
+    document.getElementById('jsonPaste').classList.remove('error');
+  }
+
+
+  function buildPullPrompt(oppId) {
+    return `Use the Salesforce MCP tools to look up Opportunity ID: ${oppId}
+
+Fetch the opportunity record and its related quote/line items. Return ONLY a raw JSON object (no markdown, no explanation) with these fields:
+
+{
+  "dealName": "<Opportunity Name>",
+  "account": "<Account Name>",
+  "oppId": "${oppId}",
+  "stage": "<StageName lowercased>",
+  "owner": "<Owner full name>",
+  "closeDate": "<CloseDate YYYY-MM-DD>",
+  "termMonths": <License_Term__c as integer or null>,
+  "arr": <ACV/ARR numeric or null>,
+  "tcv": <TCV numeric or null>,
+  "customBilling": <true if Custom_Schedule__c is true else false>,
+  "customBillingDetails": "<Custom_Billing_Schedule_Details__c or empty string>",
+  "paymentTerms": "<Payment_Terms__c lowercased with spaces replaced by hyphens, or empty>",
+  "paymentType": "<Selected_Payment_Type__c lowercased with spaces replaced by hyphens, or empty>",
+  "exceptions": "<Non_Standard_terms_description__c or empty string>",
+  "lineItems": [
+    { "product": "<product name>", "qty": <number>, "unitPrice": <number>, "termMonths": <number>, "type": "standard" }
+  ]
+}
+
+Return raw JSON only.`;
+  }
+
+  async function doSync() {
+    var inputEl = document.getElementById('sfdcInput');
+    var status = document.getElementById('sfdcSyncStatus');
+    var btn = document.getElementById('sfdcSyncBtn');
+
+    var input = inputEl ? inputEl.value.trim() : '';
+    if (!input) {
+      status.style.display='block';
+      status.textContent='Enter an Opp ID first';
+      return;
+    }
+    var oppId = extractOppId(input);
+    if (!oppId) {
+      status.style.display='block';
+      status.textContent='Not a valid Opp ID (should start with 006)';
+      return;
+    }
+
+    status.style.display='block';
+    status.textContent='Fetching ' + oppId + ' from Salesforce...';
+    btn.disabled=true;
+    btn.textContent='Syncing...';
+
+    try {
+      // Get API key — injected automatically on claude.ai, otherwise from localStorage
+      var apiKey = localStorage_safe('di_anthropic_key') || '';
+      var headers = { 'Content-Type': 'application/json' };
+      if (apiKey && !apiKey.startsWith('•')) headers['x-api-key'] = apiKey;
+
+      var resp = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: headers,
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 4000,
+          system: 'You are a Salesforce data assistant. Use MCP tools to fetch the opportunity. Return ONLY a raw JSON object, no markdown, no explanation.',
+          messages: [{ role: 'user', content: buildPullPrompt(oppId) }],
+          mcp_servers: [{ type: 'url', url: 'https://9958.apim.mcp.workato.com', name: 'salesforce' }]
+        })
+      });
+
+      if (!resp.ok) {
+        var errBody = await resp.text();
+        throw new Error('HTTP ' + resp.status + ': ' + errBody.slice(0, 300));
+      }
+
+      var data = await resp.json();
+      var text = (data.content || []).filter(function(b){ return b.type==='text'; }).map(function(b){ return b.text; }).join('');
+      if (!text) throw new Error('Empty response from API');
+
+      // Strip markdown fences if present
+      var clean = text.trim();
+      var fence = clean.match(/```(?:json)?\s*([\s\S]*?)```/);
+      if (fence) clean = fence[1].trim();
+      var first = clean.indexOf('{'), last = clean.lastIndexOf('}');
+      if (first !== -1 && last > first) clean = clean.slice(first, last+1);
+
+      // Validate JSON
+      JSON.parse(clean);
+
+      // Put in paste area and also in jsonPaste for applyJson()
+      document.getElementById('sfdcAutoJson').value = clean;
+      document.getElementById('jsonPaste').value = clean;
+      applyJson();
+
+      status.textContent='Done — deal populated from Salesforce';
+      btn.textContent='✓ Synced';
+      setTimeout(function(){ btn.textContent='Sync'; btn.disabled=false; }, 3000);
+
+    } catch(e) {
+      status.textContent='Error: ' + e.message;
+      btn.textContent='Sync';
+      btn.disabled=false;
+
+      // If CORS/fetch blocked, show manual paste fallback
+      if (e.message.indexOf('fetch') !== -1 || e.message.indexOf('Failed') !== -1 || e.message.indexOf('Load') !== -1) {
+        status.textContent='Cannot reach API directly — paste JSON manually below';
+      }
+    }
+  }
+
+  function doApply() {
+    var ta = document.getElementById('sfdcAutoJson');
+    var jp = document.getElementById('jsonPaste');
+    var status = document.getElementById('sfdcSyncStatus');
+    if (!ta || !ta.value.trim()) {
+      if (status) { status.style.display='block'; status.textContent='Paste the JSON from Claude first'; }
+      return;
+    }
+    if (jp) jp.value = ta.value;
+    applyJson();
+    if (status) { status.style.display='block'; status.textContent='Done — deal populated from Salesforce'; }
+  }
+
+  // ============ ONE-CLICK SFDC SYNC (v5) ============
+  // Calls Anthropic API directly with Salesforce MCP — key is injected
+  // automatically by Claude.ai sandbox, no Authorization header needed.
+
+  async function syncFromSFDC() {
+    const input = document.getElementById('sfdcInput').value.trim();
+    if (!input) {
+      addNotice({ id: 'sfdc-no-id', type: 'red', title: 'No Opp ID', body: 'Paste a Salesforce Opportunity ID or URL first.' });
+      return;
+    }
+    const oppId = extractOppId(input);
+    if (!oppId) {
+      addNotice({ id: 'sfdc-bad-id', type: 'red', title: 'Invalid Opp ID', body: 'Could not find a Salesforce Opportunity ID (starts with 006). Check the value and try again.' });
+      return;
+    }
+    dismissNotice('sfdc-no-id');
+    dismissNotice('sfdc-bad-id');
+    dismissNotice('sfdc-sync-error');
+
+    const btn = document.getElementById('sfdcSyncBtn');
+    const statusEl = document.getElementById('sfdcSyncStatus');
+    btn.disabled = true;
+    btn.textContent = 'Syncing...';
+    statusEl.style.display = 'block';
+    statusEl.textContent = 'Connecting to Salesforce...';
+
+    const steps = [
+      'Connecting to Salesforce...',
+      'Fetching opportunity data...',
+      'Reading quote fields...',
+      'Applying to deal...'
+    ];
+    let stepIdx = 0;
+    const stepTimer = setInterval(() => {
+      stepIdx = Math.min(stepIdx + 1, steps.length - 1);
+      if (statusEl) statusEl.textContent = steps[stepIdx];
+    }, 2500);
+
+    try {
+      const prompt = buildPullPrompt(oppId);
+      statusEl.textContent = 'Sending request...';
+
+      let response;
+      try {
+        response = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 4000,
+          system: 'You are a Salesforce data extraction assistant. Use the Salesforce MCP tools to query the requested data. Return ONLY a valid JSON object — no markdown fences, no explanation, no preamble. Raw JSON only.',
+          messages: [{ role: 'user', content: prompt }],
+          mcp_servers: [{
+            type: 'url',
+            url: 'https://9958.apim.mcp.workato.com',
+            name: 'salesforce-mcp'
+          }]
+        })
+      });
+      } catch(fetchErr) {
+        clearInterval(stepTimer);
+        // CORS or network blocked — fall back to sendPrompt immediately
+        statusEl.textContent = 'Direct fetch unavailable — using Claude chat fallback...';
+        btn.textContent = 'Waiting for Claude...';
+        document.getElementById('sfdcAutoApply').style.display = 'block';
+        document.getElementById('sfdcAutoJson').value = '';
+        setTimeout(() => document.getElementById('sfdcAutoJson').focus(), 100);
+        window._pendingSfdcOppId = oppId;
+        window._pendingSfdcDealId = currentDeal ? currentDeal.id : null;
+        sendPrompt('SFDC_PULL|' + oppId);
+        return;
+      }
+
+      clearInterval(stepTimer);
+
+      if (!response.ok) {
+        const errText = await response.text();
+        throw new Error('API ' + response.status + ': ' + errText.slice(0, 200));
+      }
+
+      statusEl.textContent = 'Parsing response...';
+      const data = await response.json();
+
+      // Collect all text blocks (may include tool use intermediate steps)
+      const textBlocks = (data.content || []).filter(b => b.type === 'text').map(b => b.text);
+      const fullText = textBlocks.join('');
+
+      if (!fullText) throw new Error('No text in API response — check MCP connection');
+
+      applySfdcResult(fullText);
+
+      statusEl.textContent = 'Done — synced from Salesforce';
+      btn.textContent = '✓ Synced';
+      setTimeout(() => {
+        btn.textContent = '⚡ Sync from Salesforce';
+        btn.disabled = false;
+      }, 3000);
+
+      if (currentDeal) {
+        currentDeal.oppId = oppId;
+        const oppField = document.querySelector('[data-field="oppId"]');
+        if (oppField) oppField.value = oppId;
+        debouncedSave();
+        checkOppIdDuplicate();
+      }
+
+    } catch (err) {
+      clearInterval(stepTimer);
+      console.error('[syncFromSFDC]', err);
+
+      // If it's a network/CORS error, fall back to sendPrompt
+      const isCors = err.message.includes('fetch') || err.message.includes('network') || err.message.includes('Failed');
+      if (isCors) {
+        statusEl.textContent = 'Direct fetch blocked — asking Claude in chat instead...';
+        btn.textContent = 'Waiting for Claude...';
+        document.getElementById('sfdcAutoApply').style.display = 'block';
+        document.getElementById('sfdcAutoJson').value = '';
+        window._pendingSfdcOppId = oppId;
+        window._pendingSfdcDealId = currentDeal ? currentDeal.id : null;
+        sendPrompt('SFDC_PULL|' + oppId);
+        return;
+      }
+
+      statusEl.textContent = 'Error: ' + err.message;
+      btn.textContent = '⚡ Sync from Salesforce';
+      btn.disabled = false;
+      addNotice({ id: 'sfdc-sync-error', type: 'red', title: 'Sync failed', body: esc(err.message) });
+    }
+  }
+
+  // Called with raw JSON string from either direct API or sendPrompt fallback
+  // applyJson: merge a JSON payload from #jsonPaste into the current deal.
+  // Generic merge — copies any known top-level deal field, replaces lineItems
+  // wholesale if provided, appends an activity entry, saves, re-renders.
+  // Unknown keys are logged to the console for diagnosis.
+  async function applyJson() {
+    const ta = document.getElementById('jsonPaste');
+    if (!ta || !ta.value.trim()) return;
+
+    let raw = ta.value.trim();
+    const fence = raw.match(/```(?:json)?\s*([\s\S]*?)```/);
+    if (fence) raw = fence[1].trim();
+    const first = raw.indexOf('{'), last = raw.lastIndexOf('}');
+    if (first !== -1 && last > first) raw = raw.slice(first, last + 1);
+
+    let payload;
+    try { payload = JSON.parse(raw); }
+    catch (e) {
+      console.error('[applyJson] Invalid JSON:', e.message);
+      const status = document.getElementById('sfdcSyncStatus');
+      if (status) { status.style.display = 'block'; status.textContent = 'Invalid JSON: ' + e.message; }
+      return;
+    }
+
+    if (!currentDeal) {
+      console.warn('[applyJson] No currentDeal — creating one');
+      await newDeal();
+    }
+
+    // Whitelist of deal fields we'll merge (matches newDealObject schema).
+    const allowed = new Set([
+      'dealName','account','oppId','stage','status','owner','closeDate','termMonths',
+      'customBilling','customBillingDetails','firstInvoiceDate','billingFrequency',
+      'invoiceAmount','numInvoices','paymentTerms','paymentType','arr','tcv',
+      'lineItems','notes','exceptions','customOrderStatus','customOrderFormType'
+    ]);
+
+    const unknown = [];
+    let appliedCount = 0;
+    Object.keys(payload).forEach(k => {
+      if (allowed.has(k)) {
+        currentDeal[k] = payload[k];
+        appliedCount++;
+      } else {
+        unknown.push(k);
+      }
+    });
+
+    if (unknown.length) console.warn('[applyJson] Unknown keys ignored:', unknown);
+
+    currentDeal.updatedAt = new Date().toISOString();
+    currentDeal.updatedBy = currentUser || 'Team';
+    currentDeal.activity = currentDeal.activity || [];
+    currentDeal.activity.push({
+      action: 'Synced from Salesforce (' + appliedCount + ' fields)',
+      actor: currentUser || 'Team',
+      at: new Date().toISOString()
+    });
+
+    await saveDeal(currentDeal);
+    renderDetail();
+    setTimeout(() => checkDuplicateLines(false), 100);
+    setTimeout(() => checkOppIdDuplicate(), 110);
+  }
+
+  function applySfdcResult(jsonStr) {
+    const btn = document.getElementById('sfdcSyncBtn');
+    const statusEl = document.getElementById('sfdcSyncStatus');
+
+    const targetId = window._pendingSfdcDealId;
+    if (targetId && (!currentDeal || currentDeal.id !== targetId)) openDeal(targetId);
+
+    try {
+      let clean = jsonStr.trim();
+      const fence = clean.match(/```(?:json)?\s*([\s\S]*?)```/);
+      if (fence) clean = fence[1].trim();
+      const first = clean.indexOf('{'), last = clean.lastIndexOf('}');
+      if (first !== -1 && last > first) clean = clean.slice(first, last + 1);
+
+      document.getElementById('jsonPaste').value = clean;
+      applyJson();
+
+      if (statusEl) statusEl.textContent = 'Synced from Salesforce';
+      if (btn) { btn.textContent = '✓ Synced'; btn.disabled = false; }
+      setTimeout(() => { if (btn) btn.textContent = '⚡ Sync from Salesforce'; }, 3000);
+      document.getElementById('sfdcAutoApply').style.display = 'none';
+    } catch(e) {
+      if (statusEl) statusEl.textContent = 'Error applying: ' + e.message;
+      if (btn) { btn.textContent = '⚡ Sync from Salesforce'; btn.disabled = false; }
+      document.getElementById('sfdcManualFallback').style.display = 'block';
+      document.getElementById('jsonPaste').value = jsonStr;
+    }
+    window._pendingSfdcOppId = null;
+    window._pendingSfdcDealId = null;
+  }
+
+  // Auto-apply when valid JSON is pasted into quick-paste area
+  function onSfdcJsonInput(val) {
+    val = val.trim();
+    if (!val) return;
+    const fence = val.match(/```(?:json)?\s*([\s\S]*?)```/);
+    if (fence) val = fence[1].trim();
+    const first = val.indexOf('{'), last = val.lastIndexOf('}');
+    if (first === -1 || last <= first) return;
+    val = val.slice(first, last + 1);
+    try { JSON.parse(val); applySfdcResult(val); } catch(e) { /* not valid yet */ }
+  }
+
+  // Listen for postMessage from relay (future-proofing)
+  window.addEventListener('message', function(event) {
+    const data = event.data;
+    if (!data) return;
+    const str = typeof data === 'string' ? data : (data.text || data.content || '');
+    if (str && str.startsWith('SFDC_RESULT|')) applySfdcResult(str.slice('SFDC_RESULT|'.length));
+  });
+
+
+  // ============ PUSH ============
+  function openPushModal() {
+    if (!currentDeal) return;
+    document.getElementById('pushContent').textContent = buildSFDCNote(currentDeal);
+    document.getElementById('pushModal').style.display = 'grid';
+  }
+
+  function buildSFDCNote(d) {
+    const flags = computeFlags(d);
+    const overrides = d.flagOverrides || {};
+    const openFlags = flags.filter(f => !overrides[f.id]?.resolved);
+
+    let lines = [];
+    lines.push(`DEAL INTAKE — ${d.dealName || 'Untitled'}`);
+    lines.push(`Account: ${d.account || '—'}`);
+    lines.push(`Owner: ${d.owner || '—'}`);
+    lines.push(`Stage: ${stageLabel(d.stage)}  |  Intake: ${statusLabel(d.status)}`);
+    lines.push(`Close date: ${d.closeDate || '—'}  |  Term: ${d.termMonths || '—'} months`);
+    lines.push(`ARR: ${d.arr ? formatCurrency(parseFloat(d.arr)) : '—'}  |  TCV: ${d.tcv ? formatCurrency(parseFloat(d.tcv)) : '—'}`);
+    lines.push('');
+    if (openFlags.length) {
+      lines.push(`⚑ ${openFlags.length} OPEN FLAG${openFlags.length === 1 ? '' : 'S'}`);
+      openFlags.forEach(f => lines.push(`  • [${f.severity.toUpperCase()}] ${f.title}`));
+      lines.push('');
+    }
+    lines.push('— BILLING —');
+    lines.push(`Custom schedule: ${d.customBilling ? 'YES' : 'no'}`);
+    lines.push(`First invoice: ${d.firstInvoiceDate || '—'}`);
+    lines.push(`Frequency: ${d.billingFrequency || '—'}`);
+    lines.push(`Invoice amount: ${d.invoiceAmount ? formatCurrency(parseFloat(d.invoiceAmount)) : '—'}`);
+    lines.push(`# of invoices: ${d.numInvoices || '—'}`);
+    lines.push(`Payment terms: ${d.paymentTerms ? humanize(d.paymentTerms) : '—'}`);
+    lines.push(`Payment type: ${d.paymentType ? humanize(d.paymentType) : '—'}`);
+    lines.push('');
+    if ((d.lineItems || []).length) {
+      lines.push('— LINE ITEMS —');
+      d.lineItems.forEach(li => {
+        const tag = li.type && li.type !== 'standard' ? ` [${li.type}]` : '';
+        lines.push(`• ${li.product || '—'}${tag}  ×${li.qty || 0}  @ ${formatCurrency(li.unitPrice || 0)}  ${li.termMonths || 0}mo  =  ${formatCurrency(lineItemTotal(li))}`);
+      });
+      lines.push(`Total: ${formatCurrency(d.lineItems.reduce((s,li)=>s+(li.qty||0)*(li.unitPrice||0),0))}`);
+      const rebates = totalRebatesFor(d);
+      if (rebates > 0) lines.push(`Rebates (abs): ${formatCurrency(rebates)}`);
+      lines.push('');
+    }
+    if ((d.attachments || []).length) {
+      lines.push('— ORDER FORM VERSIONS —');
+      d.attachments.forEach(a => {
+        lines.push(`• ${a.version || '—'}: ${a.filename}${a.isCurrent ? ' [CURRENT]' : ''}`);
+        if (a.link) lines.push(`  Link: ${a.link}`);
+        if (a.notes) lines.push(`  Notes: ${a.notes}`);
+      });
+      lines.push('');
+    }
+    if (d.exceptions) {
+      lines.push('— NON-STANDARD LANGUAGE —');
+      lines.push(d.exceptions);
+      lines.push('');
+    }
+    if (d.notes) {
+      lines.push('— NOTES —');
+      lines.push(d.notes);
+      lines.push('');
+    }
+    lines.push(`— Generated by Deal Intake on ${new Date().toLocaleString()}, by ${currentUser} —`);
+    return lines.join('\n');
+  }
+
+  async function copyPushContent() {
+    const text = document.getElementById('pushContent').textContent;
+    const ok = await copyText(text);
+    if (ok) {
+      toast('Push note copied', 'success');
+      document.getElementById('pushModal').style.display = 'none';
+      if (currentDeal) {
+        currentDeal.activity.push({ action: 'Copied SFDC push note', actor: currentUser, at: new Date().toISOString() });
+        debouncedSave();
+        renderActivity();
+      }
+    } else {
+      toast('Copy failed — select the text manually and copy', 'error');
+    }
+  }
+
+  // ============ EXPORT ============
+  function exportDeal() {
+    if (!currentDeal) return;
+    const text = buildSFDCNote(currentDeal);
+    downloadText(text, `deal-${(currentDeal.dealName || 'untitled').replace(/[^a-z0-9]+/gi, '-').toLowerCase()}.txt`);
+    toast('Deal exported', 'success');
+  }
+  function exportAll() {
+    const filtered = getFilteredDeals();
+    if (filtered.length === 0) { toast('No deals to export', 'error'); return; }
+    const sections = filtered.map(d => buildSFDCNote(d)).join('\n\n' + '='.repeat(60) + '\n\n');
+    downloadText(sections, `deal-intake-export-${new Date().toISOString().slice(0,10)}.txt`);
+    toast(`Exported ${filtered.length} deals`, 'success');
+  }
+  function downloadText(text, filename) {
+    const blob = new Blob([text], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = filename; a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  // ============ GOOGLE DOCS EXPORT ============
+  // Generates a properly-formatted HTML file. To get it into Google Docs:
+  //   1. drag the downloaded .html into Google Drive, OR
+  //   2. Drive → New → File upload → select the file → right-click → Open with → Google Docs
+  // Drive imports HTML and preserves headings, bold, tables, and bullets.
+  function buildDealHtml(d) {
+    const flags = computeFlags(d);
+    const overrides = d.flagOverrides || {};
+    const openFlags = flags.filter(f => !overrides[f.id]?.resolved);
+    const fmt = v => v ? esc(String(v)) : '—';
+    const money = v => v ? esc(formatCurrency(parseFloat(v))) : '—';
+
+    // KV table builder — Google Docs renders these as proper tables on import.
+    const kvTable = (rows) => `<table style="border-collapse:collapse; width:100%; margin:8px 0;">${
+      rows.map(([k,v]) => `<tr><td style="border:1px solid #ddd; padding:6px 10px; background:#f7f7f5; width:30%; font-weight:bold;">${esc(k)}</td><td style="border:1px solid #ddd; padding:6px 10px;">${v}</td></tr>`).join('')
+    }</table>`;
+
+    let html = '';
+    html += `<h1 style="margin-bottom:4px;">Deal Intake — ${fmt(d.dealName)}</h1>`;
+    html += `<p style="color:#6b7785; margin-top:0;">Generated ${esc(new Date().toLocaleString())} by ${esc(currentUser || '—')}</p>`;
+
+    html += `<h2>Summary</h2>`;
+    html += kvTable([
+      ['Account', fmt(d.account)],
+      ['Opportunity ID', fmt(d.oppId)],
+      ['Owner', fmt(d.owner)],
+      ['Stage', esc(stageLabel(d.stage))],
+      ['Intake status', esc(statusLabel(d.status))],
+      ['Close date', fmt(d.closeDate)],
+      ['Term (months)', fmt(d.termMonths)],
+      ['ARR', money(d.arr)],
+      ['TCV', money(d.tcv)],
+    ]);
+
+    if (openFlags.length) {
+      html += `<h2 style="color:#c9302c;">⚑ ${openFlags.length} Open flag${openFlags.length === 1 ? '' : 's'}</h2>`;
+      html += '<ul>';
+      openFlags.forEach(f => {
+        html += `<li><strong>[${esc(f.severity.toUpperCase())}]</strong> ${esc(f.title)}${f.desc ? ` — ${esc(f.desc)}` : ''}</li>`;
+      });
+      html += '</ul>';
+    }
+
+    html += `<h2>Billing</h2>`;
+    html += kvTable([
+      ['Custom schedule', d.customBilling ? '<strong>YES</strong>' : 'no'],
+      ['First invoice', fmt(d.firstInvoiceDate)],
+      ['Frequency', fmt(d.billingFrequency)],
+      ['Invoice amount', money(d.invoiceAmount)],
+      ['# of invoices', fmt(d.numInvoices)],
+      ['Payment terms', d.paymentTerms ? esc(humanize(d.paymentTerms)) : '—'],
+      ['Payment type', d.paymentType ? esc(humanize(d.paymentType)) : '—'],
+    ]);
+
+    if ((d.lineItems || []).length) {
+      html += `<h2>Line items</h2>`;
+      html += `<table style="border-collapse:collapse; width:100%; margin:8px 0;">
+        <thead><tr style="background:#1c2733; color:#fff;">
+          <th style="border:1px solid #1c2733; padding:6px 10px; text-align:left;">Product</th>
+          <th style="border:1px solid #1c2733; padding:6px 10px; text-align:left;">Type</th>
+          <th style="border:1px solid #1c2733; padding:6px 10px; text-align:right;">Qty</th>
+          <th style="border:1px solid #1c2733; padding:6px 10px; text-align:right;">Unit price</th>
+          <th style="border:1px solid #1c2733; padding:6px 10px; text-align:right;">Term (mo)</th>
+          <th style="border:1px solid #1c2733; padding:6px 10px; text-align:right;">Total</th>
+        </tr></thead><tbody>`;
+      d.lineItems.forEach(li => {
+        html += `<tr>
+          <td style="border:1px solid #ddd; padding:6px 10px;">${esc(li.product || '—')}</td>
+          <td style="border:1px solid #ddd; padding:6px 10px;">${esc(li.type || 'standard')}</td>
+          <td style="border:1px solid #ddd; padding:6px 10px; text-align:right;">${esc(String(li.qty || 0))}</td>
+          <td style="border:1px solid #ddd; padding:6px 10px; text-align:right;">${esc(formatCurrency(li.unitPrice || 0))}</td>
+          <td style="border:1px solid #ddd; padding:6px 10px; text-align:right;">${esc(String(li.termMonths || 0))}</td>
+          <td style="border:1px solid #ddd; padding:6px 10px; text-align:right;">${esc(formatCurrency(lineItemTotal(li)))}</td>
+        </tr>`;
+      });
+      const grandTotal = d.lineItems.reduce((s,li)=>s+(li.qty||0)*(li.unitPrice||0),0);
+      html += `<tr style="background:#f7f7f5; font-weight:bold;">
+        <td colspan="5" style="border:1px solid #ddd; padding:6px 10px; text-align:right;">Total</td>
+        <td style="border:1px solid #ddd; padding:6px 10px; text-align:right;">${esc(formatCurrency(grandTotal))}</td>
+      </tr></tbody></table>`;
+      const rebates = totalRebatesFor(d);
+      if (rebates > 0) {
+        html += `<p style="color:#b45309;"><strong>Rebates (absolute):</strong> ${esc(formatCurrency(rebates))}</p>`;
+      }
+    }
+
+    if ((d.attachments || []).length) {
+      html += `<h2>Order form versions</h2><ul>`;
+      d.attachments.forEach(a => {
+        html += `<li><strong>${esc(a.version || '—')}</strong>: ${esc(a.filename || '')}${a.isCurrent ? ' <em>(current)</em>' : ''}`;
+        if (a.link) html += `<br/>Link: <a href="${esc(a.link)}">${esc(a.link)}</a>`;
+        if (a.notes) html += `<br/>Notes: ${esc(a.notes)}`;
+        html += `</li>`;
+      });
+      html += `</ul>`;
+    }
+
+    if (d.exceptions) {
+      html += `<h2>Non-standard language &amp; exceptions</h2>`;
+      html += `<div style="background:#fffbf2; border-left:4px solid #f59e0b; padding:10px 14px; white-space:pre-wrap; font-family:inherit;">${esc(d.exceptions)}</div>`;
+    }
+    if (d.notes) {
+      html += `<h2>Notes</h2><div style="white-space:pre-wrap;">${esc(d.notes)}</div>`;
+    }
+
+    return `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${esc(d.dealName || 'Deal Intake')}</title>
+<style>body { font-family: Arial, sans-serif; color: #1c2733; max-width: 8.5in; margin: 0.5in auto; padding: 0 0.25in; line-height: 1.45; }
+h1 { font-size: 22px; } h2 { font-size: 15px; margin-top: 22px; border-bottom: 1px solid #ddd; padding-bottom: 4px; }
+ul { margin: 6px 0; padding-left: 22px; } a { color: #1463cc; }</style>
+</head><body>${html}</body></html>`;
+  }
+
+  function exportDealToGoogleDocs() {
+    if (!currentDeal) return;
+    const html = buildDealHtml(currentDeal);
+    const filename = `deal-${(currentDeal.dealName || 'untitled').replace(/[^a-z0-9]+/gi, '-').toLowerCase()}.html`;
+    const blob = new Blob([html], { type: 'text/html' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = filename; a.click();
+    URL.revokeObjectURL(url);
+    addNotice({
+      id: 'gdocs-export', type: 'blue',
+      title: 'Downloaded — open in Google Docs',
+      body: `<strong>${esc(filename)}</strong> downloaded. To open as a Google Doc: <strong>Drive → New → File upload</strong> (or drag the file into Drive), then right-click the uploaded file → <strong>Open with → Google Docs</strong>. Tables, headings, and formatting will be preserved.`,
+    });
+    toast('Downloaded — drag into Drive, open with Google Docs', 'success');
+  }
+
+  // ============ SETTINGS ============
+  function openSettings() {
+    document.getElementById('setRebatePct').value = thresholds.rebatePct;
+    document.getElementById('setStandardTerms').value = thresholds.standardTerms.join(', ');
+    document.getElementById('setMaxNet').value = thresholds.maxNetDays;
+    document.getElementById('setStandardPayments').value = thresholds.standardPayments.join(', ');
+    const storedKey = localStorage_safe('di_anthropic_key');
+    document.getElementById('setApiKey').value = storedKey ? '••••••••••••••••' : '';
+    // Sheets URL
+    const url = sheetsUrl();
+    document.getElementById('setSheetsUrl').value = url || '';
+    document.getElementById('sheetsTestResult').style.display = 'none';
+    document.getElementById('settingsModal').style.display = 'grid';
+  }
+  function closeSettings() { document.getElementById('settingsModal').style.display = 'none'; }
+  async function saveSettings() {
+    const rebatePct = parseFloat(document.getElementById('setRebatePct').value) || DEFAULT_THRESHOLDS.rebatePct;
+    const terms = document.getElementById('setStandardTerms').value
+      .split(',').map(t => parseInt(t.trim())).filter(t => t > 0);
+    const maxNet = parseFloat(document.getElementById('setMaxNet').value) || DEFAULT_THRESHOLDS.maxNetDays;
+    const payments = document.getElementById('setStandardPayments').value
+      .split(',').map(p => p.trim().toLowerCase()).filter(Boolean);
+    thresholds = {
+      rebatePct,
+      standardTerms: terms.length ? terms : DEFAULT_THRESHOLDS.standardTerms,
+      maxNetDays: maxNet,
+      standardPayments: payments.length ? payments : DEFAULT_THRESHOLDS.standardPayments,
+    };
+    await saveThresholds();
+
+    // Save Sheets URL
+    const sheetsUrlVal = document.getElementById('setSheetsUrl').value.trim();
+    if (sheetsUrlVal && sheetsUrlVal.includes('script.google.com')) {
+      localStorage.setItem('di_sheets_url', sheetsUrlVal);
+      dismissNotice('storage-fallback');
+      await loadDeals();
+      renderTable();
+      toast('Google Sheets connected — deals will sync with the team', 'success');
+    } else if (sheetsUrlVal === '') {
+      localStorage.removeItem('di_sheets_url');
+    }
+
+    // Save Anthropic API key if changed
+    const apiKey = document.getElementById('setApiKey').value.trim();
+    if (apiKey && !apiKey.startsWith('•')) localStorage_safe('di_anthropic_key', apiKey);
+
+    closeSettings();
+    if (!sheetsUrlVal) toast('Settings saved', 'success');
+    if (currentDeal) { renderFlags(); applyFlagStyling(); }
+    renderTable();
+  }
+
+  async function testSheetsConnection() {
+    const url = document.getElementById('setSheetsUrl').value.trim();
+    const result = document.getElementById('sheetsTestResult');
+    if (!url) {
+      result.style.display = 'block';
+      result.style.background = 'var(--accent-bg)';
+      result.style.color = 'var(--accent)';
+      result.textContent = 'Paste the Apps Script URL first';
+      return;
+    }
+    result.style.display = 'block';
+    result.style.background = 'var(--slate-bg)';
+    result.style.color = 'var(--muted)';
+    result.textContent = 'Testing...';
+    try {
+      const resp = await fetch(url + '?action=ping', { cache: 'no-store' });
+      if (!resp.ok) throw new Error('HTTP ' + resp.status);
+      const data = await resp.json();
+      if (data.ok) {
+        result.style.background = 'var(--green-bg)';
+        result.style.color = 'var(--green)';
+        result.textContent = '✓ Connected successfully';
+      } else {
+        throw new Error(data.error || 'Unexpected response');
+      }
+    } catch (e) {
+      result.style.background = 'var(--accent-bg)';
+      result.style.color = 'var(--accent)';
+      result.textContent = '✗ ' + e.message + ' — check the URL and make sure the script is deployed as "Anyone" access';
+    }
+  }
+  async function resetSettings() {
+    thresholds = { ...DEFAULT_THRESHOLDS };
+    await saveThresholds();
+    openSettings();
+    toast('Reset to defaults', 'success');
+    if (currentDeal) { renderFlags(); applyFlagStyling(); }
+    renderTable();
+  }
+
+  // ============ HELPERS ============
+  function extractOppId(input) {
+    if (!input) return null;
+    var m = String(input).match(/006[a-zA-Z0-9]{12,15}/);
+    return m ? m[0] : null;
+  }
+
+  function esc(s) {
+    if (s === null || s === undefined) return '';
+    return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+  function stageLabel(id) { return STAGES.find(s => s.id === id)?.label || '—'; }
+  function statusLabel(id) { return STATUSES.find(s => s.id === id)?.label || '—'; }
+  function humanize(s) {
+    if (!s) return '';
+    return String(s).replace(/[-_]/g, ' ').replace(/([A-Z])/g, ' $1').toLowerCase().replace(/^./, c => c.toUpperCase()).trim();
+  }
+  function slugify(s) {
+    if (s == null) return '';
+    return String(s).toLowerCase().trim()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '');
+  }
+  function formatCurrency(n, abbreviate) {
+    n = parseFloat(n) || 0;
+    if (abbreviate) {
+      if (Math.abs(n) >= 1_000_000) return '$' + (n / 1_000_000).toFixed(1).replace(/\.0$/, '') + 'M';
+      if (Math.abs(n) >= 1_000) return '$' + (n / 1_000).toFixed(1).replace(/\.0$/, '') + 'K';
+    }
+    const sign = n < 0 ? '-' : '';
+    return sign + '$' + Math.abs(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+  function formatRelative(iso) {
+    if (!iso) return '—';
+    const then = new Date(iso);
+    const diff = (Date.now() - then.getTime()) / 1000;
+    if (diff < 60) return 'just now';
+    if (diff < 3600) return `${Math.floor(diff/60)}m ago`;
+    if (diff < 86400) return `${Math.floor(diff/3600)}h ago`;
+    if (diff < 604800) return `${Math.floor(diff/86400)}d ago`;
+    return then.toLocaleDateString();
+  }
+  function toast(msg, kind) {
+    const wrap = document.getElementById('toastWrap');
+    const t = document.createElement('div');
+    t.className = `toast ${kind || ''}`;
+    t.textContent = msg;
+    wrap.appendChild(t);
+    setTimeout(() => { t.style.opacity = '0'; t.style.transform = 'translateY(8px)'; }, 2400);
+    setTimeout(() => t.remove(), 2700);
+  }
+
+  // ============ BOOT ============
+  // Explicitly attach all inline-onclick handlers to window. In some sandbox
+  // contexts (and depending on how the artifact is loaded), top-level
+  // `function foo(){}` declarations don't auto-attach to window, which causes
+  // "ReferenceError: signIn is not defined" when buttons are clicked.
+  Object.assign(window, {
+    showBoard, openDeal, newDeal, deleteDeal, deleteDealById, markAsVersion,
+    saveAndReturn,
+    exportDeal, exportAll, exportDealToGoogleDocs,
+    openPushModal, copyPushContent,
+    doSync, doApply, syncFromSFDC, applySfdcResult, onSfdcJsonInput, applyJson, clearJsonPaste,
+    addLineItem, deleteLineItem, checkDuplicateLines,
+    openAttachmentModal, closeAttachmentModal, saveAttachment,
+    setCurrentAttachment, deleteAttachment,
+    openSettings, closeSettings, saveSettings, resetSettings, testSheetsConnection,
+    toggleInstructions, dismissQuickstart,
+    setStageFilter,
+    resolveFlag, reopenFlag,
+    dismissNotice,
+    updateField,
+  });
+
+  (async function boot() {
+    const stored = localStorage_safe('di_user');
+    currentUser = stored || 'Team';
+    document.getElementById('userPill').textContent = currentUser;
+    await init();
+  })();
+
+  window.addEventListener('focus', async () => {
+    if (currentUser && !currentDeal) {
+      await loadDeals();
+      renderTable();
+    }
+  });
+</script>
+</body>
+</html>
